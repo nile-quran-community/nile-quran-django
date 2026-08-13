@@ -14,6 +14,8 @@ ALLOWED_HOSTS: list[str] = os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",")
 
 CORS_ALLOW_ALL_ORIGINS: bool = os.getenv("DJANGO_ENVIRONMENT", "").upper() != "PROD"
 
+CSRF_TRUSTED_ORIGINS: list[str] = os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+
 SECRET_KEY: str = os.getenv(
     "DJANGO_SECRET_KEY",
     "django-dev-d6d=nm0@u_1+&f_go09c8w07-t8@z$wr*(wi(vn*$a9!bk=^o3",
