@@ -65,7 +65,7 @@ class UserActivitiesViewSet(viewsets.ModelViewSet):
     filterset_class = filters.UserActivitiesFilter
 
     def get_user(self) -> models.User:
-        uid: t.Optional[int] = self.kwargs.get("uid")
+        uid: int | None = self.kwargs.get("uid")
         user = models.User.objects.filter(id=uid).first()
         if not user:
             raise NotFound(detail=_("No user was found with the given ID."))
@@ -75,16 +75,12 @@ class UserActivitiesViewSet(viewsets.ModelViewSet):
         permission_classes: t.Sequence[type[permissions.BasePermission]] = []
         if self.action in ("list", "retrieve"):
             permission_classes = [permissions.IsAuthenticated]
-        elif self.action in ("create", "update", "partial_update"):
+        elif self.action in ("create", "update", "partial_update", "destroy"):
             permission_classes = [
                 permissions.IsAuthenticated,
                 userperms.CanModifyActivity,
             ]
-        elif self.action == "destroy":
-            permission_classes = [
-                permissions.IsAuthenticated,
-                userperms.CanModifyActivity,
-            ]
+
         return [permission() for permission in permission_classes]
 
     def get_queryset(self) -> QuerySet[models.Activity]:
@@ -158,16 +154,18 @@ class UserPointsListView(generics.ListAPIView):
         activities: QuerySet[models.Activity] = self.filter_queryset(
             self.get_queryset()
         )
-        users: QuerySet[models.User] = models.User.objects.all()
+        students: QuerySet[models.User] = models.User.objects.filter(
+            groups__name="Student"
+        )
 
-        for user in users:
-            acts: QuerySet[models.Activity] = activities.filter(user=user)
+        for student in students:
+            acts: QuerySet[models.Activity] = activities.filter(user=student)
             points: int = (
                 acts.aggregate(Sum("category__value"))["category__value__sum"] or 0
             )
             response_data.append(
                 {
-                    "user": user.pk,
+                    "user": student.pk,
                     "points": points,
                     "activities": acts,
                 }
@@ -184,7 +182,7 @@ class UserPointsListView(generics.ListAPIView):
                     reverse=(f"-{field}" in ordering),
                 )
 
-        page: t.Optional[t.Sequence[dict]] = self.paginate_queryset(sorted_data)
+        page: t.Sequence[t.Any] | None = self.paginate_queryset(sorted_data)
         if page:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
@@ -198,7 +196,7 @@ class UserPointsView(generics.RetrieveAPIView):
     filterset_class = filters.ActivitiesFilter
 
     def get_user(self) -> models.User:
-        uid: t.Optional[int] = self.kwargs.get("id")
+        uid: int | None = self.kwargs.get("id")
         user = models.User.objects.filter(id=uid).first()
         if not user:
             raise NotFound(detail=_("No user was found with the given ID."))
@@ -255,7 +253,7 @@ class CategoryPointsListView(generics.ListAPIView):
             self.get_queryset()
         )
 
-        page: t.Optional[t.Sequence[dict]] = self.paginate_queryset(categories)
+        page: t.Sequence[dict] | None = self.paginate_queryset(categories)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
