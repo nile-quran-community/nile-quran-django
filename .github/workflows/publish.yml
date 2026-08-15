@@ -66,6 +66,9 @@ jobs:
       packages: write
       id-token: write
       attestations: write
+      artifact-metadata: write
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
     steps:
       - id: checkout
         name: Checkout repository
@@ -124,3 +127,53 @@ jobs:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
+
+  deploy:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://nile-quran-community.com
+    env:
+      NEW_IMAGE_TAG: "${{ needs.prepare.outputs.version }}@${{ needs.build.outputs.digest }}"
+    steps:
+      - id: app-token
+        name: Create semantic release app token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          repositories: nile-quran-community/infra
+          client-id: "${{ vars.SEMANTIC_RELEASE_APP_CLIENT_ID }}"
+          private-key: "${{ secrets.SEMANTIC_RELEASE_APP_PRIVATE_KEY }}"
+
+      - name: Configure Git CLI
+        env:
+          GH_TOKEN: "${{ steps.app-token.outputs.token }}"
+          SEMANTIC_RELEASE_APP_SLUG: "${{ steps.app-token.outputs.app-slug }}"
+        run: |
+          export SEMANTIC_RELEASE_APP_UID="$(gh api "/users/${SEMANTIC_RELEASE_APP_SLUG}[bot]" --jq .id)"
+          git config --global user.name "${SEMANTIC_RELEASE_APP_SLUG}[bot]"
+          git config --global user.email "${SEMANTIC_RELEASE_APP_UID}+${SEMANTIC_RELEASE_APP_SLUG}[bot]@users.noreply.github.com"
+          gh auth setup-git
+
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: nile-quran-community/infra
+          token: "${{ steps.app-token.outputs.token }}"
+
+      - name: Update deployed frontend image
+        uses: mikefarah/yq@1b9b4ac5187171d2e5e3129be0cfa827c7f9d53d # v4.5.3
+        env:
+          KUSTOMIZATION_DIR: cluster/apps/nile-quran-community
+        with:
+          cmd: |
+            cd '${{ env.KUSTOMIZATION_DIR }}'
+            yq -i '.images[.images[] | select(.name == "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}") | path | .[-1]].newTag = "${{ env.NEW_IMAGE_TAG }}"' kustomization.yaml
+
+      - name: Commit and push
+        run: |
+          echo "Diff:"
+          git diff --stat
+          git add cluster/apps/nile-quran-community/kustomization.yaml
+          git commit -m 'chore(cluster/nqc): bump frontend version to ${{ env.NEW_IMAGE_TAG }}'
+          git push origin main
