@@ -35,7 +35,10 @@ class ActivitySerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    username: serializers.CharField = serializers.CharField(trim_whitespace=True)
+    username: serializers.CharField = serializers.CharField(
+        trim_whitespace=True,
+        validators=[models.username_validator],
+    )
     referrer: serializers.SlugRelatedField = serializers.SlugRelatedField(
         queryset=models.User.objects.all(),
         slug_field="username",

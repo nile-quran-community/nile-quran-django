@@ -81,6 +81,14 @@ msgstr "حضور اجتماع الفريق"
 msgid "Only Arabic letters are allowed."
 msgstr "يسمح فقط بالحروف العربية."
 
+#: src/nile_quran_community_api/apps/v1/users/models.py:15
+msgid ""
+"Enter a valid username. This value may contain only unaccented lowercase "
+"a-z and uppercase A-Z letters, numbers, and @/./+/-/_ characters."
+msgstr ""
+"يرجى إدخال اسم مستخدم صالح. يجب ألا يحتوي إلا على حروف إنجليزية صغيرة أو "
+"كبيرة، وأرقام، والرموز @/./+/-/_."
+
 #: src/nile_quran_community_api/apps/v1/users/models.py:18
 msgid "Can change the user's activities"
 msgstr "يمكن تغيير أنشطة المستخدم"
