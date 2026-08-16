@@ -189,7 +189,7 @@ class TestUserPointsAPI:
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_admin_token}")
         response = client.get("/users/points/")
         expected_data = {
-            "count": 2,
+            "count": 1,
             "next": None,
             "previous": None,
             "results": [
@@ -201,13 +201,14 @@ class TestUserPointsAPI:
                             "id": activity.id,
                             "category": activity.category.id,
                             "date": activity.date,
+                            "multiplier": activity.multiplier,
                         }
                     ],
                 },
-                {"user": admin_user.id, "points": 0, "activities": []},
             ],
         }
         assert response.status_code == status.HTTP_200_OK
+        print(response.data)
         assert response.data == expected_data
 
     def test_get_user_points_by_id(
@@ -388,40 +389,35 @@ class TestCategoryPointsAPI:
 
 
 @pytest.mark.django_db
-class TestUserActivitiesCount:
-    def test_create_activity_with_count(
+class TestUserActivitiesMultiplier:
+    def test_create_activity_with_multiplier(
         self,
+        jwt_admin_token,
         client: APIClient,
         existing_user: User,
-        jwt_admin_token,
         category: Category,
     ):
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_admin_token}")
         payload = {
             "category": category.id,
-            "count": 5,
+            "multiplier": 5,
             "date": "2025-12-07T05:55:07Z",
         }
+
         response = client.post(
             f"/users/{existing_user.id}/activities/",
             payload,
             format="json",
-        )
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["created"] == 5
-        assert (
-            Activity.objects.filter(
-                user=existing_user,
-                category=category,
-            ).count()
-            == 5
         )
 
-    def test_create_activity_without_count_defaults_to_one(
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data == {"id": 1, **payload}
+
+    def test_create_activity_without_multiplier_defaults_to_one(
         self,
+        jwt_admin_token,
         client: APIClient,
         existing_user: User,
-        jwt_admin_token,
         category: Category,
     ):
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_admin_token}")
@@ -429,13 +425,14 @@ class TestUserActivitiesCount:
             "category": category.id,
             "date": "2025-12-07T05:55:07Z",
         }
+
         response = client.post(
             f"/users/{existing_user.id}/activities/",
             payload,
             format="json",
         )
+
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["created"] == 1
         assert (
             Activity.objects.filter(
                 user=existing_user,
@@ -444,26 +441,28 @@ class TestUserActivitiesCount:
             == 1
         )
 
-    def test_create_activity_with_invalid_count(
+    def test_create_activity_with_invalid_multiplier(
         self,
+        jwt_admin_token,
         client: APIClient,
         existing_user: User,
-        jwt_admin_token,
         category: Category,
     ):
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_admin_token}")
         payload = {
             "category": category.id,
-            "count": 0,
+            "multiplier": 0,
             "date": "2025-12-07T05:55:07Z",
         }
+
         response = client.post(
             f"/users/{existing_user.id}/activities/",
             payload,
             format="json",
         )
+
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "count" in response.data
+        assert "multiplier" in response.data
 
 
 @pytest.mark.django_db
