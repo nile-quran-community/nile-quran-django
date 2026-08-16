@@ -1,7 +1,6 @@
 import typing as t
 
-from django.db.models import QuerySet, Sum
-from django.utils import timezone
+from django.db.models import F, QuerySet, Sum
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -9,7 +8,7 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
-from rest_framework import generics, permissions, status, viewsets
+from rest_framework import generics, permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
@@ -64,13 +63,6 @@ class UserActivitiesViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ActivitySerializer
     filterset_class = filters.UserActivitiesFilter
 
-    def get_user(self) -> models.User:
-        uid: int | None = self.kwargs.get("uid")
-        user = models.User.objects.filter(id=uid).first()
-        if not user:
-            raise NotFound(detail=_("No user was found with the given ID."))
-        return user
-
     def get_permissions(self) -> t.Sequence[permissions.BasePermission]:
         permission_classes: t.Sequence[type[permissions.BasePermission]] = []
         if self.action in ("list", "retrieve"):
@@ -83,50 +75,21 @@ class UserActivitiesViewSet(viewsets.ModelViewSet):
 
         return [permission() for permission in permission_classes]
 
+    def get_user(self) -> models.User:
+        uid: int | None = self.kwargs.get("uid")
+        user = models.User.objects.filter(id=uid).first()
+        if not user:
+            raise NotFound(detail=_("No user was found with the given ID."))
+        return user
+
     def get_queryset(self) -> QuerySet[models.Activity]:
         if getattr(self, "swagger_fake_view", False):
             return models.Activity.objects.none()
+
         return models.Activity.objects.filter(user=self.get_user())
 
-    def create_activities(self, serializer) -> list[models.Activity]:
-        user = self.get_user()
-        count = serializer.validated_data.pop("count", 1)
-        activity_data = {
-            **serializer.validated_data,
-            "user": user,
-        }
-        activities = [models.Activity(**activity_data) for _ in range(count)]
-
-        models.Activity.objects.bulk_create(activities)
-        return activities
-
-    @extend_schema(
-        examples=[
-            OpenApiExample(
-                "Example 1: Using count",
-                summary="Create multiple activities at once",
-                description="Creates 5 identical activities with different IDs",
-                value={"category": 1, "count": 5, "date": "2025-12-07T05:55:07.704Z"},
-                request_only=True,
-            ),
-            OpenApiExample(
-                "Example 2: Without count (defaults to 1)",
-                summary="Create single activity",
-                description="Creates 1 activity (default behavior)",
-                value={"category": 1, "date": "2025-12-07T05:55:07.704Z"},
-                request_only=True,
-            ),
-        ]
-    )
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        activities = self.create_activities(serializer)
-
-        return Response(
-            {"created": len(activities), "date": timezone.now()},
-            status=status.HTTP_201_CREATED,
-        )
+    def perform_create(self, serializer) -> None:
+        serializer.save(user=self.get_user())
 
     def perform_update(self, serializer) -> None:
         serializer.save(user=self.get_user())
@@ -161,7 +124,10 @@ class UserPointsListView(generics.ListAPIView):
         for student in students:
             acts: QuerySet[models.Activity] = activities.filter(user=student)
             points: int = (
-                acts.aggregate(Sum("category__value"))["category__value__sum"] or 0
+                acts.aggregate(points=Sum(F("category__value") * F("multiplier")))[
+                    "points"
+                ]
+                or 0
             )
             response_data.append(
                 {
@@ -222,14 +188,17 @@ class UserPointsView(generics.RetrieveAPIView):
         ]
     )
     def get(self, request: Request, *args, **kwargs) -> Response:
-        user: models.User = self.get_user()
         activities: QuerySet[models.Activity] = self.filter_queryset(
             self.get_queryset()
         )
         points: int = (
-            activities.aggregate(Sum("category__value"))["category__value__sum"] or 0
+            activities.aggregate(points=Sum(F("category__value") * F("multiplier")))[
+                "points"
+            ]
+            or 0
         )
 
+        user: models.User = self.get_user()
         response_data: dict = {
             "user": user.pk,
             "points": points,
