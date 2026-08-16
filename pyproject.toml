@@ -45,7 +45,7 @@ testpaths = ["tests"]
 DJANGO_SETTINGS_MODULE = "nile_quran_community_api.settings"
 
 [tool.ruff.lint]
-ignore = ["F403"]
+ignore = ["F403", "RUF012"]
 
 [tool.setuptools]
 include-package-data = true

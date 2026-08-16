@@ -1,6 +1,7 @@
 import typing as t
 
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django_stubs_ext import StrPromise
@@ -85,6 +86,13 @@ class Activity(models.Model):
         _("date"),
         blank=False,
         null=False,
+    )
+    multiplier: models.PositiveIntegerField = models.PositiveIntegerField(
+        _("multiplier"),
+        default=1,
+        blank=False,
+        null=False,
+        validators=[MinValueValidator(1)],
     )
 
     def __str__(self) -> str:
