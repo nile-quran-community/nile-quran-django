@@ -161,7 +161,7 @@ jobs:
           repository: nile-quran-community/infra
           token: "${{ steps.app-token.outputs.token }}"
 
-      - name: Update deployed frontend image
+      - name: Update deployed backend image
         uses: mikefarah/yq@1b9b4ac5187171d2e5e3129be0cfa827c7f9d53d # v4.5.3
         env:
           KUSTOMIZATION_DIR: cluster/apps/nile-quran-community
@@ -175,5 +175,5 @@ jobs:
           echo "Diff:"
           git diff --stat
           git add cluster/apps/nile-quran-community/kustomization.yaml
-          git commit -m 'chore(cluster/nqc): bump frontend version to ${{ env.NEW_IMAGE_TAG }}'
+          git commit -m 'chore(cluster/nqc): bump backend version to ${{ env.NEW_IMAGE_TAG }}'
           git push origin main
