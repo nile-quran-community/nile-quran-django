@@ -20,7 +20,7 @@ def revert_team_activity_category(apps, _):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("users", "0008_activity_multiplier"),
+        ("users", "0009_alter_user_first_name_alter_user_last_name_and_more"),
     ]
 
     operations = [
