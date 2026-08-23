@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-31 07:42+0000\n"
+"POT-Creation-Date: 2026-08-23 19:13+0000\n"
 "PO-Revision-Date: 2026-03-23 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Arabic <ar@li.org>\n"
@@ -11,46 +11,35 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/nile_quran_community_api/apps/v1/goals/models.py:8
 msgid "Goal"
 msgstr "هدف"
 
-#: src/nile_quran_community_api/apps/v1/goals/models.py:9
 msgid "Goals"
 msgstr "أهداف"
 
-#: src/nile_quran_community_api/apps/v1/goals/models.py:13
 msgid "Monthly"
 msgstr "شهري"
 
-#: src/nile_quran_community_api/apps/v1/goals/models.py:14
 msgid "Yearly"
 msgstr "سنوي"
 
-#: src/nile_quran_community_api/apps/v1/goals/models.py:17
 msgid "scope"
 msgstr "نطاق"
 
-#: src/nile_quran_community_api/apps/v1/goals/models.py:20
 msgid "title"
 msgstr "عنوان"
 
-#: src/nile_quran_community_api/apps/v1/goals/models.py:23
 msgid "description"
 msgstr "وصف"
 
-#: src/nile_quran_community_api/apps/v1/goals/models.py:26
 msgid "target"
 msgstr "مستهدف"
 
-#: src/nile_quran_community_api/apps/v1/goals/models.py:29
 msgid "current"
 msgstr "حالي"
 
-#: src/nile_quran_community_api/apps/v1/goals/models.py:31
 msgid "created at"
 msgstr "تم إنشاؤه في"
 
-#: src/nile_quran_community_api/apps/v1/goals/serializers.py:16
 msgid "Current is greater than target"
 msgstr "القيمة الحالية أكبر من المستهدفة"

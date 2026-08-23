@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-20 16:44+0000\n"
+"POT-Creation-Date: 2026-08-23 19:18+0000\n"
 "PO-Revision-Date: 2026-03-23 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Arabic <ar@li.org>\n"
@@ -11,145 +11,142 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/nile_quran_community_api/apps/v1/users/filters.py:18
 msgid "Username"
 msgstr "اسم المستخدم"
 
-#: src/nile_quran_community_api/apps/v1/users/filters.py:19
 msgid "Email"
 msgstr "البريد الإلكتروني"
 
-#: src/nile_quran_community_api/apps/v1/users/filters.py:20
 msgid "First Name"
 msgstr "الاسم الأول"
 
-#: src/nile_quran_community_api/apps/v1/users/filters.py:21
 msgid "Last Name"
 msgstr "اسم العائلة"
 
-#: src/nile_quran_community_api/apps/v1/users/filters.py:61
 msgid "Activity Date"
 msgstr "تاريخ النشاط"
 
-#: src/nile_quran_community_api/apps/v1/users/filters.py:62
-#: src/nile_quran_community_api/apps/v1/users/models.py:62
 msgid "Category"
 msgstr "فئة"
 
-#: src/nile_quran_community_api/apps/v1/users/filters.py:107
-#: src/nile_quran_community_api/apps/v1/users/models.py:74
 msgid "value"
 msgstr "قيمة"
 
-#: src/nile_quran_community_api/apps/v1/users/filters.py:114
 msgid "Filter categories by ID"
 msgstr "تصفية الفئات حسب المعرف"
 
-#: src/nile_quran_community_api/apps/v1/users/filters.py:117
 msgid "Filter categories by name"
 msgstr "تصفية الفئات حسب الاسم"
 
-#: src/nile_quran_community_api/apps/v1/users/filters.py:120
 msgid "Filter categories by value"
 msgstr "تصفية الفئات حسب القيمة"
 
-#: src/nile_quran_community_api/apps/v1/users/migrations/0002_seed_categories.py:12
 msgid "Attending thought session"
 msgstr "حضور جلسة الخاطرة"
 
-#: src/nile_quran_community_api/apps/v1/users/migrations/0002_seed_categories.py:18
 msgid "Preparing a thought"
 msgstr "تحضير خاطرة"
 
-#: src/nile_quran_community_api/apps/v1/users/migrations/0002_seed_categories.py:24
 msgid "Reading Quran"
 msgstr "قراءة القرآن"
 
-#: src/nile_quran_community_api/apps/v1/users/migrations/0002_seed_categories.py:30
 msgid "Reciting Quran"
 msgstr "تسميع القرآن"
 
-#: src/nile_quran_community_api/apps/v1/users/migrations/0002_seed_categories.py:36
 msgid "Inviting a new member"
 msgstr "دعوة عضو جديد"
 
-#: src/nile_quran_community_api/apps/v1/users/migrations/0002_seed_categories.py:42
 msgid "Attending team meeting"
 msgstr "حضور اجتماع الفريق"
 
-#: src/nile_quran_community_api/apps/v1/users/models.py:11
+msgid "Contributing to team activities"
+msgstr "المساهمة في أنشطة الفريق"
+
 msgid "Only Arabic letters are allowed."
 msgstr "يسمح فقط بالحروف العربية."
 
-#: src/nile_quran_community_api/apps/v1/users/models.py:15
 msgid ""
-"Enter a valid username. This value may contain only unaccented lowercase "
-"a-z and uppercase A-Z letters, numbers, and @/./+/-/_ characters."
+"Enter a valid username. This value may contain only unaccented lowercase a-z "
+"and uppercase A-Z letters, numbers, and @/./+/-/_ characters."
 msgstr ""
 "يرجى إدخال اسم مستخدم صالح. يجب ألا يحتوي إلا على حروف إنجليزية صغيرة أو "
 "كبيرة، وأرقام، والرموز @/./+/-/_."
 
-#: src/nile_quran_community_api/apps/v1/users/models.py:18
+msgid "user"
+msgstr "مستخدم"
+
+#, fuzzy
+#| msgid "user"
+msgid "users"
+msgstr "مستخدمون"
+
 msgid "Can change the user's activities"
 msgstr "يمكن تغيير أنشطة المستخدم"
 
-#: src/nile_quran_community_api/apps/v1/users/models.py:23
+#, fuzzy
+#| msgid "Username"
+msgid "username"
+msgstr "اسم المستخدم"
+
+msgid "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
+msgstr ""
+"مطلوب. 150 حرفًا أو أقل. يُسمح فقط بالأحرف والأرقام والرموز @ و . و + و - و _."
+
+msgid "A user with that username already exists."
+msgstr "اسم المستخدم محجوز بالفعل"
+
+#, fuzzy
+#| msgid "First Name"
+msgid "first name"
+msgstr "الاسم الأول"
+
+#, fuzzy
+#| msgid "Last Name"
+msgid "last name"
+msgstr "اسم العائلة"
+
 msgid "email address"
 msgstr "عنوان بريد إلكتروني"
 
-#: src/nile_quran_community_api/apps/v1/users/models.py:47
 msgid "User referrer reference."
 msgstr "مرجع إحالة المستخدم."
 
-#: src/nile_quran_community_api/apps/v1/users/models.py:55
 msgid "User supervisor reference (required for students)."
 msgstr "مرجع مشرف المستخدم (مطلوب للطلاب)."
 
-#: src/nile_quran_community_api/apps/v1/users/models.py:63
 msgid "Categories"
 msgstr "الفئات"
 
-#: src/nile_quran_community_api/apps/v1/users/models.py:67
 msgid "name"
 msgstr "الاسم"
 
-#: src/nile_quran_community_api/apps/v1/users/models.py:85
 msgid "Activity"
 msgstr "نشاط"
 
-#: src/nile_quran_community_api/apps/v1/users/models.py:86
 msgid "Activities"
 msgstr "أنشطة"
 
-#: src/nile_quran_community_api/apps/v1/users/models.py:95
-msgid "user"
-msgstr "مستخدم"
+msgid "category"
+msgstr "فئة"
+
+msgid "date"
+msgstr "تاريخ"
+
+msgid "multiplier"
+msgstr "مضاعف"
+
+msgid "No referrer was found with the given username"
+msgstr "لم يتم العثور على مرجع باسم المستخدم المحدد"
+
+msgid "No supervisor was found with the given username"
+msgstr "لم يتم العثور على مشرف باسم المستخدم المحدد"
+
+msgid "Username already taken"
+msgstr "اسم المستخدم محجوز بالفعل"
+
+msgid "No user was found with the given ID."
+msgstr "لم يتم العثور على مستخدم بالمعرف المحدد."
 
 # NOTE: Manually added
 msgid "User"
 msgstr "مستخدم"
-
-#: src/nile_quran_community_api/apps/v1/users/models.py:100
-msgid "category"
-msgstr "فئة"
-
-#: src/nile_quran_community_api/apps/v1/users/models.py:103
-msgid "date"
-msgstr "تاريخ"
-
-#: src/nile_quran_community_api/apps/v1/users/serializers.py:49
-msgid "No referrer was found with the given username"
-msgstr "لم يتم العثور على مرجع باسم المستخدم المحدد"
-
-#: src/nile_quran_community_api/apps/v1/users/serializers.py:58
-msgid "No supervisor was found with the given username"
-msgstr "لم يتم العثور على مشرف باسم المستخدم المحدد"
-
-#: src/nile_quran_community_api/apps/v1/users/serializers.py:89
-msgid "Username already taken"
-msgstr "اسم المستخدم محجوز بالفعل"
-
-#: src/nile_quran_community_api/apps/v1/users/views.py:71
-#: src/nile_quran_community_api/apps/v1/users/views.py:204
-msgid "No user was found with the given ID."
-msgstr "لم يتم العثور على مستخدم بالمعرف المحدد."
