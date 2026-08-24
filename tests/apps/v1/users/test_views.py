@@ -54,6 +54,27 @@ class TestUserPermissions:
         response = client.delete(f"/users/{existing_user.id}/")
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
+    def test_user_can_update_own_password(
+        self, client, existing_user: User, jwt_user_token
+    ):
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_user_token}")
+        data = {"password": "newpassword123"}
+        response = client.patch(f"/users/{existing_user.id}/", data, format="json")
+        existing_user.refresh_from_db()
+
+        assert response.status_code == status.HTTP_200_OK
+        assert existing_user.password != "newpassword123"
+        assert existing_user.check_password("newpassword123")
+
+    def test_user_can_update_with_unchanged_username(
+        self, client, existing_user: User, jwt_user_token
+    ):
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_user_token}")
+        data = {"username": existing_user.username, "password": "newpassword123"}
+        response = client.patch(f"/users/{existing_user.id}/", data, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+
     def test_user_cannot_update_other_users(
         self, client, existing_user: User, jwt_user_token
     ):

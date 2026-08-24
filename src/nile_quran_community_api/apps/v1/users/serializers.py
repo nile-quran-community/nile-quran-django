@@ -82,16 +82,25 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs: dict = {"password": {"write_only": True}}
 
     def validate_username(self, value: str) -> str:
-        if models.User.objects.filter(username__exact=value).exists():
+        queryset = models.User.objects.filter(username__exact=value)
+        if self.instance:
+            queryset = queryset.exclude(pk=self.instance.pk)
+
+        if queryset.exists():
             raise serializers.ValidationError(_("Username already taken"))
+
         return value
 
     def create(self, validated_data: dict) -> models.User:
-        for i, grp in enumerate(validated_data["groups"]):
-            validated_data["groups"][i] = Group.objects.get(name=grp)
-
         validated_data["password"] = make_password(validated_data["password"])
+
         return super().create(validated_data)
+
+    def update(self, instance: models.User, validated_data: dict) -> models.User:
+        if "password" in validated_data:
+            validated_data["password"] = make_password(validated_data["password"])
+
+        return super().update(instance, validated_data)
 
 
 class UserPointsSerializer(serializers.Serializer):
