@@ -14,6 +14,7 @@ dist
 *.egg-info
 
 # django
+*.sqlite
 db.sqlite3
 staticfiles
 

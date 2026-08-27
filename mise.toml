@@ -11,61 +11,21 @@ ruff = "0.15"
 oxfmt = "0.43"
 tombi = "0.9"
 # NOTE: Utils
-gum = "0.17"
 prek = "0.3"
 
 [env]
 _.python.venv = { create = true, path = ".venv" }
 PYTHONPATH = "{{ config_root }}/src"
 DJANGO_SETTINGS_MODULE = "nile_quran_community_api.settings"
-DATABASE_URL = "postgresql://nqc:nqc@localhost:5432/nqc"
+DATABASE_URL = "sqlite:///{{ config_root }}/dev.sqlite"
 
 [tasks.install]
 description = "Install dependencies"
 alias = "i"
 run = ["mise install", "uv sync --all-groups --all-extras", "prek install"]
 
-[tasks.postgres]
-description = "Start development PostgreSQL database"
-tools = { docker-cli = "29" }
-alias = "pg"
-usage = '''
-flag "-n --container-name <container-name>" help="Name for the postgres container" default="nqc-postgres-dev"
-flag "-i --container-image <container-image>" help="Image to use for creating the postgres container" default="postgres:18-alpine"
-flag "-P --port <port>" help="Port to listen on for postgresql connections" default="5432"
-flag "-u --username <username>" help="superuser username" default="nqc"
-flag "-p --password <password>" help="superuser password" default="nqc"
-flag "-d --database <database>" help="initial database name" default="nqc"
-'''
-run = '''
-#!/usr/bin/env bash
-set -euo pipefail
-
-if [ -n "$(docker container ls -qaf "name=${usage_container_name}")" ]; then
-  gum log -l info "Starting postgres container: ${usage_container_name?}"
-  docker container start "${usage_container_name}"
-else
-  gum spin --title "Creating postgres container" -- \
-  docker container run -d \
-  --name "${usage_container_name}" \
-  -e "POSTGRES_USER=${usage_username}" \
-  -e "POSTGRES_PASSWORD=${usage_password}" \
-  -e "POSTGRES_DB=${usage_database}" \
-  -p "${usage_port}:5432" \
-  -v "${usage_container_name}-data:/var/lib/postgresql/data" \
-  "${usage_container_image}"
-fi
-
-gum spin --spinner.foreground=4 --title "Waiting for postgres to be ready" -- sh -c '
-  while ! docker container exec "${usage_container_name}" pg_isready &>/dev/null; do
-    sleep 1
-  done
-'
-'''
-
 [tasks.migrate]
 description = "Run database migrations"
-depends = ["postgres"]
 alias = "m"
 run = '''
 django-admin makemigrations
@@ -86,56 +46,6 @@ description = "Run unit tests"
 depends = ["postgres"]
 alias = "t"
 run = "pytest"
-
-[tasks.stop]
-description = "Stop all running dev containers (requires containers to have the defined prefix)"
-wait_for = ["devserver"]
-tools = { docker-cli = "29" }
-usage = '''
-flag "-p --prefix <prefix>" help="Prefix used for all project containers" default="nqc-"
-'''
-run = '''
-#!/usr/bin/env bash
-set -euo pipefail
-
-_CONTAINER_IDS="$(docker container ls -aqf name="${usage_prefix}")"
-_CONTAINER_IDS="${_CONTAINER_IDS//$'\n'/ }"
-
-if [ -n "${_CONTAINER_IDS}" ]; then
-  gum log -l warn "Stopping containers: ${_CONTAINER_IDS}"
-  docker container stop ${_CONTAINER_IDS} >/dev/null
-else
-  gum log -l info "No containers found with prefix: ${usage_prefix}"
-fi
-'''
-
-[tasks.clean]
-description = "Remove all development containers and volumes (requires containers to have the defined prefix)"
-depends = ["stop"]
-tools = { docker-cli = "29" }
-usage = '''
-flag "-p --prefix <prefix>" help="Prefix used for all project containers" default="nqc-"
-'''
-run = '''
-#!/usr/bin/env bash
-set -euo pipefail
-
-_CONTAINER_IDS="$(docker container ls -aqf name="${usage_prefix}")"
-_CONTAINER_IDS="${_CONTAINER_IDS//$'\n'/ }"
-if [ -n "${_CONTAINER_IDS}" ]; then
-  for id in ${_CONTAINER_IDS}; do
-    _ATTACHED_VOLUMES="$(docker container inspect --format '{% raw %}{{ range .Mounts }}{{ if eq .Type "volume" }}{{ .Name }}{{ "\n" }}{{ end }}{{ end }}{% endraw %}' "${id}")"
-
-    gum log -l warn "Removing container: ${id}"
-    docker container rm -f "${id}" &>/dev/null
-
-    gum log -l warn "Removing attached volumes: ${_ATTACHED_VOLUMES//$'\n'/ }"
-    docker volume rm ${_ATTACHED_VOLUMES} &>/dev/null
-  done
-else
-  gum log -l info "No containers found with prefix: ${usage_prefix}"
-fi
-'''
 
 [tasks.hooks]
 description = "Run all pre-commit hooks"
