@@ -35,11 +35,90 @@ class TestUserAPI:
 
 
 @pytest.mark.django_db
+class TestUserSignup:
+    def test_new_signup_defaults_to_inactive(self, client: APIClient):
+        payload = {
+            "email": "newsignup@example.com",
+            "username": "newsignup",
+            "password": "testpass123",
+            "first_name": "أحمد",
+            "last_name": "محمد",
+        }
+        response: Response = client.post("/users/", payload, format="json")
+        assert response.status_code == status.HTTP_201_CREATED
+
+        created = User.objects.get(username="newsignup")
+        assert created.is_active is False
+
+    def test_new_signup_cannot_force_is_active_true(self, client: APIClient):
+        payload = {
+            "email": "sneaky@example.com",
+            "username": "sneaky",
+            "password": "testpass123",
+            "first_name": "أحمد",
+            "last_name": "محمد",
+            "is_active": True,
+        }
+        response: Response = client.post("/users/", payload, format="json")
+        assert response.status_code == status.HTTP_201_CREATED
+
+        created = User.objects.get(username="sneaky")
+        assert created.is_active is False
+
+
+@pytest.mark.django_db
 class TestUserPermissions:
     def test_admin_can_list_users(self, client, jwt_admin_token):
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_admin_token}")
         response = client.get("/users/")
         assert response.status_code == status.HTTP_200_OK
+
+    def test_admin_can_activate_user(
+        self, client, existing_user: User, jwt_admin_token
+    ):
+        existing_user.is_active = False
+        existing_user.save()
+
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_admin_token}")
+        response = client.patch(
+            f"/users/{existing_user.id}/", {"is_active": True}, format="json"
+        )
+        existing_user.refresh_from_db()
+
+        assert response.status_code == status.HTTP_200_OK
+        assert existing_user.is_active is True
+
+    def test_user_cannot_activate_self(
+        self, client, existing_user: User, jwt_user_token
+    ):
+        # NOTE: simplejwt rejects the token outright once its owner is inactive
+        # (401), so a deactivated user can't even reach the permission check.
+        existing_user.is_active = False
+        existing_user.save()
+
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_user_token}")
+        response = client.patch(
+            f"/users/{existing_user.id}/", {"is_active": True}, format="json"
+        )
+        existing_user.refresh_from_db()
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert existing_user.is_active is False
+
+    def test_non_admin_cannot_activate_other_user(
+        self, client, existing_user: User, jwt_supervisor_token
+    ):
+        existing_user.is_active = False
+        existing_user.save()
+
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_supervisor_token}")
+        response = client.patch(
+            f"/users/{existing_user.id}/", {"is_active": True}, format="json"
+        )
+        existing_user.refresh_from_db()
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert existing_user.is_active is False
 
     def test_admin_can_update_user(
         self, client, existing_user: User, jwt_admin_token, admin_user
@@ -231,6 +310,23 @@ class TestUserPointsAPI:
         assert response.status_code == status.HTTP_200_OK
         print(response.data)
         assert response.data == expected_data
+
+    def test_inactive_student_excluded_from_points_list(
+        self,
+        client: APIClient,
+        existing_user: User,
+        admin_user,
+        activity: Activity,
+        jwt_admin_token,
+    ):
+        existing_user.is_active = False
+        existing_user.save()
+
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_admin_token}")
+        response = client.get("/users/points/")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["results"] == []
 
     def test_get_user_points_by_id(
         self,
