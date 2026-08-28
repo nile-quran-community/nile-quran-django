@@ -43,7 +43,6 @@ django-admin runserver
 
 [tasks.test]
 description = "Run unit tests"
-depends = ["postgres"]
 alias = "t"
 run = "pytest"
 
