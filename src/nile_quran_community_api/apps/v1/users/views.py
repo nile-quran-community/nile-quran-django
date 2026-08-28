@@ -118,7 +118,7 @@ class UserPointsListView(generics.ListAPIView):
             self.get_queryset()
         )
         students: QuerySet[models.User] = models.User.objects.filter(
-            groups__name="Student"
+            groups__name="Student", is_active=True
         )
 
         for student in students:

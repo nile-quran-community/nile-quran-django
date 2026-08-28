@@ -77,6 +77,7 @@ class UserSerializer(serializers.ModelSerializer):
             "supervisor",
             "date_joined",
             "groups",
+            "is_active",
         )
         read_only_fields: t.Iterable[str] = ("date_joined",)
         extra_kwargs: dict = {"password": {"write_only": True}}
@@ -96,6 +97,8 @@ class UserSerializer(serializers.ModelSerializer):
             validated_data["groups"][i] = Group.objects.get(name=grp)
 
         validated_data["password"] = make_password(validated_data["password"])
+        # NOTE: new accounts require admin activation, regardless of who created them.
+        validated_data["is_active"] = False
 
         return super().create(validated_data)
 

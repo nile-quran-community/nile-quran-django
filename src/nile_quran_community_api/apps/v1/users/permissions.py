@@ -14,16 +14,21 @@ class CanCreateUser(BasePermission):
 
 
 class CanModifyUser(BasePermission):
+    def __init__(self) -> None:
+        # WARN: only admins can edit the following fields of a user
+        self._ADMIN_ONLY_FIELDS: tuple[str, ...] = (
+            "referrer",
+            "supervisor",
+            "groups",
+            "is_active",
+        )
+
     def has_object_permission(
         self, request: Request, view: APIView, obj: models.User
     ) -> bool:
         if not request.user:
             return False
-        # NOTE: only admins can edit the following fields of a user:
-        # - referrer
-        # - supervisor
-        # - groups
-        if any(field in request.data for field in ("referrer", "supervisor", "groups")):
+        if any(field in request.data for field in self._ADMIN_ONLY_FIELDS):
             return request.user.groups.filter(name="Admin").exists()
         return obj == request.user or request.user.has_perm("users.change_user")
 
