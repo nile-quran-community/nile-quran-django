@@ -326,7 +326,7 @@ class TestUserPointsAPI:
         response = client.get("/users/points/")
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["results"] == []
+        assert response.data == []
 
     def test_get_user_points_by_id(
         self,
