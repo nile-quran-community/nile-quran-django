@@ -92,6 +92,9 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data: dict) -> models.User:
+        for i, grp in enumerate(validated_data["groups"]):
+            validated_data["groups"][i] = Group.objects.get(name=grp)
+
         validated_data["password"] = make_password(validated_data["password"])
 
         return super().create(validated_data)
