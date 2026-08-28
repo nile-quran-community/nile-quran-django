@@ -7,9 +7,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs) -> None:
         self.stdout.write(self.style.MIGRATE_HEADING("Setup roles:"))
-        students, created = Group.objects.get_or_create(name="Student")
-        supervisors, created = Group.objects.get_or_create(name="Supervisor")
-        admins, created = Group.objects.get_or_create(name="Admin")
+        students, _ = Group.objects.get_or_create(name="Student")
+        supervisors, _ = Group.objects.get_or_create(name="Supervisor")
+        admins, _ = Group.objects.get_or_create(name="Admin")
 
         students.permissions.add(
             Permission.objects.get(codename="view_user"),

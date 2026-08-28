@@ -1,5 +1,4 @@
 import re
-from typing import Optional
 
 from django.utils.translation import gettext as _
 
@@ -190,7 +189,7 @@ class DynamicErrorTranslator:
         translated: str = _(msg)
 
         for regex, msgid in self._ERROR_STRINGS:
-            match: Optional[re.Match] = re.fullmatch(regex, msg)
+            match: re.Match | None = re.fullmatch(regex, msg)
             if match:
                 placeholders: set[str] = set(match.groupdict().keys()).difference(
                     ("default",)

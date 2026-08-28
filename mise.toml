@@ -7,7 +7,7 @@ all_compile = false
 python = "3.13"
 uv = "0.11"
 # NOTE: Formatter and linters
-ruff = "0.15"
+ruff = "0.16"
 oxfmt = "0.43"
 tombi = "0.9"
 # NOTE: Utils

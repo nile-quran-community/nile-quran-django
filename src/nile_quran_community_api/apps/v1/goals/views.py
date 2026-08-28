@@ -1,8 +1,9 @@
-from rest_framework import viewsets, permissions
-from .serializers import GoalSerializer
-from .permissions import CanCreateGoal, CanDeleteGoal, CanModifyGoal
-from .models import Goal
+from rest_framework import permissions, viewsets
+
 from .filters import GoalFilterSet
+from .models import Goal
+from .permissions import CanCreateGoal, CanDeleteGoal, CanModifyGoal
+from .serializers import GoalSerializer
 
 
 class GoalViewSet(viewsets.ModelViewSet):
