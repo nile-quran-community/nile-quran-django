@@ -272,7 +272,7 @@ class TestGoalFilters:
     ):
         client.force_authenticate(user=existing_user)
         start_date = date(2025, 5, 4)
-        end_date = datetime.datetime.now(tz=datetime.UTC).today()
+        end_date = datetime.datetime.now(tz=datetime.UTC).date()
         response = client.get(
             f"/goals/?created_at_after={start_date}&created_at_before={end_date}"
         )
