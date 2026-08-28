@@ -1,4 +1,4 @@
-from datetime import date
+import datetime
 
 import pytest
 from django.core.management import call_command
@@ -25,7 +25,7 @@ def goal_data() -> dict:
         "description": "goal 1 description",
         "target": 10,
         "current": 5,
-        "created_at": date.today(),
+        "created_at": datetime.datetime.now(tz=datetime.UTC).date(),
     }
 
 
@@ -57,7 +57,7 @@ def goals_for_filtering(db):
             description="Read 5 pages daily",
             target=30,
             current=10,
-            created_at=date(2025, 3, 2),
+            created_at=datetime.date(2025, 3, 2),
         ),
         Goal.objects.create(
             scope="yearly",
@@ -65,7 +65,7 @@ def goals_for_filtering(db):
             description="Memorize 2 surahs",
             target=2,
             current=1,
-            created_at=date(2025, 2, 24),
+            created_at=datetime.date(2025, 2, 24),
         ),
         Goal.objects.create(
             scope="monthly",
@@ -73,7 +73,7 @@ def goals_for_filtering(db):
             description="Revise Juz Amma",
             target=5,
             current=5,
-            created_at=date(2025, 7, 25),
+            created_at=datetime.date(2025, 7, 25),
         ),
     ]
     return goals
