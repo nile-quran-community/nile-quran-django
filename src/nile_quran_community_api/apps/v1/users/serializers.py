@@ -4,27 +4,28 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group
 from django.utils.translation import gettext_lazy as _
 from django_stubs_ext import StrPromise
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from . import models
 
 
 class CategorySerializer(serializers.ModelSerializer):
-    value: serializers.IntegerField = serializers.IntegerField(
-        default=0,
-    )
-    name: serializers.SerializerMethodField = serializers.SerializerMethodField()
+    value = serializers.IntegerField(default=0)
+    name = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Category
         fields: str = "__all__"
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_name(self, obj) -> str | StrPromise:
         return _(obj.name)
 
 
 class ActivitySerializer(serializers.ModelSerializer):
-    category: serializers.PrimaryKeyRelatedField = serializers.PrimaryKeyRelatedField(
+    category = serializers.PrimaryKeyRelatedField(
         queryset=models.Category.objects.all(),
         default=1,
     )
@@ -35,11 +36,11 @@ class ActivitySerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    username: serializers.CharField = serializers.CharField(
+    username = serializers.CharField(
         trim_whitespace=True,
         validators=[models.username_validator],
     )
-    referrer: serializers.SlugRelatedField = serializers.SlugRelatedField(
+    referrer = serializers.SlugRelatedField(
         queryset=models.User.objects.all(),
         slug_field="username",
         error_messages={
@@ -48,7 +49,7 @@ class UserSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
-    supervisor: serializers.SlugRelatedField = serializers.SlugRelatedField(
+    supervisor = serializers.SlugRelatedField(
         queryset=models.User.objects.filter(groups__name="Supervisor"),
         slug_field="username",
         error_messages={
@@ -57,7 +58,7 @@ class UserSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
-    groups: serializers.SlugRelatedField = serializers.SlugRelatedField(
+    groups = serializers.SlugRelatedField(
         queryset=Group.objects.all(),
         slug_field="name",
         many=True,
@@ -110,11 +111,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserPointsSerializer(serializers.Serializer):
-    user: serializers.IntegerField = serializers.IntegerField(
+    user = serializers.IntegerField(
         read_only=True,
         default=1,
     )
-    points: serializers.IntegerField = serializers.IntegerField(
+    points = serializers.IntegerField(
         read_only=True,
         min_value=0,
         default=0,
