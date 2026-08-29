@@ -5,7 +5,15 @@ from . import models
 
 @admin.register(models.User)
 class UserAdmin(admin.ModelAdmin):
-    pass
+    list_display = ("username", "referrer", "roles", "is_active")
+
+    @admin.display(description="User groups / roles")
+    def roles(self, obj: models.User):
+        ret: str = "-"
+        if obj.groups.exists():
+            ret = ", ".join(grp.name for grp in obj.groups.all())
+
+        return ret
 
 
 @admin.register(models.Category)
