@@ -4,9 +4,6 @@ from .models import Goal
 
 
 class GoalFilterSet(django_filters.FilterSet):
-    scope: django_filters.ChoiceFilter = django_filters.ChoiceFilter(
-        choices=Goal.Scope.choices
-    )
     title: django_filters.CharFilter = django_filters.CharFilter(
         field_name="title", lookup_expr="icontains"
     )
@@ -27,6 +24,12 @@ class GoalFilterSet(django_filters.FilterSet):
     )
     created_at: django_filters.DateFromToRangeFilter = (
         django_filters.DateFromToRangeFilter(field_name="created_at")
+    )
+    start_date: django_filters.DateFromToRangeFilter = (
+        django_filters.DateFromToRangeFilter(field_name="start_date")
+    )
+    end_date: django_filters.DateFromToRangeFilter = (
+        django_filters.DateFromToRangeFilter(field_name="end_date")
     )
 
     class Meta:

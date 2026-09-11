@@ -5,4 +5,4 @@ from .models import Goal
 
 @admin.register(Goal)
 class GoalAdmin(admin.ModelAdmin):
-    pass
+    list_display = ("title", "current", "target", "start_date", "end_date")
