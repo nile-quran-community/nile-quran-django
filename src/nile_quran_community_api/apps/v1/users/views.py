@@ -36,6 +36,7 @@ from . import permissions as userperms
         ],
     )
 )
+@extend_schema(tags=["users"])
 class UserViewSet(viewsets.ModelViewSet):
     queryset = models.User.objects.all()
     serializer_class = serializers.UserSerializer
@@ -59,6 +60,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+@extend_schema(tags=["activities"])
 class UserActivitiesViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ActivitySerializer
     filterset_class = filters.UserActivitiesFilter
@@ -95,6 +97,7 @@ class UserActivitiesViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.get_user())
 
 
+@extend_schema(tags=["points"])
 class UserPointsListView(generics.ListAPIView):
     queryset = models.Activity.objects.all()
     serializer_class = serializers.UserPointsSerializer
@@ -157,6 +160,7 @@ class UserPointsListView(generics.ListAPIView):
         return Response(serializer.data)
 
 
+@extend_schema(tags=["points"])
 class UserPointsView(generics.RetrieveAPIView):
     serializer_class = serializers.UserPointsSerializer
     filterset_class = filters.ActivitiesFilter
@@ -209,6 +213,7 @@ class UserPointsView(generics.RetrieveAPIView):
         return Response(serializer.data)
 
 
+@extend_schema(tags=["points"])
 class CategoryPointsListView(generics.ListAPIView):
     serializer_class = serializers.CategorySerializer
     filterset_class = filters.CategoryFilter

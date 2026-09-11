@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import permissions, viewsets
 
 from .filters import GoalFilterSet
@@ -6,6 +7,7 @@ from .permissions import CanCreateGoal, CanDeleteGoal, CanModifyGoal
 from .serializers import GoalSerializer
 
 
+@extend_schema(tags=["goals"])
 class GoalViewSet(viewsets.ModelViewSet):
     serializer_class = GoalSerializer
     queryset = Goal.objects.all()
