@@ -8,7 +8,7 @@ class Goal(models.Model):
     class Meta:
         verbose_name = _("Goal")
         verbose_name_plural = _("Goals")
-        ordering = ["created_at"]
+        ordering = ["-id"]
 
     title: models.CharField = models.CharField(
         _("title"),

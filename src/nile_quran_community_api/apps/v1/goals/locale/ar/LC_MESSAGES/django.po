@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-23 19:13+0000\n"
+"POT-Creation-Date: 2026-09-11 15:13+0000\n"
 "PO-Revision-Date: 2026-03-23 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Arabic <ar@li.org>\n"
@@ -11,35 +11,32 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+msgid "current"
+msgstr "حالي"
+
+msgid "target"
+msgstr "مستهدف"
+
+msgid "start date"
+msgstr "تاريخ البداية"
+
+msgid "end date"
+msgstr "تاريخ الهاية"
+
+msgid "created at"
+msgstr "تم إنشاؤه في"
+
 msgid "Goal"
 msgstr "هدف"
 
 msgid "Goals"
 msgstr "أهداف"
 
-msgid "Monthly"
-msgstr "شهري"
-
-msgid "Yearly"
-msgstr "سنوي"
-
-msgid "scope"
-msgstr "نطاق"
-
 msgid "title"
 msgstr "عنوان"
 
 msgid "description"
 msgstr "وصف"
-
-msgid "target"
-msgstr "مستهدف"
-
-msgid "current"
-msgstr "حالي"
-
-msgid "created at"
-msgstr "تم إنشاؤه في"
 
 msgid "Current is greater than target"
 msgstr "القيمة الحالية أكبر من المستهدفة"

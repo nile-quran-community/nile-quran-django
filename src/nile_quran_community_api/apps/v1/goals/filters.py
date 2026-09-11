@@ -1,9 +1,27 @@
 import django_filters
+from django.utils.translation import gettext_lazy as _
 
 from .models import Goal
 
 
 class GoalFilterSet(django_filters.FilterSet):
+    ordering = django_filters.OrderingFilter(
+        fields=(
+            ("start_date", "start_date"),
+            ("end_date", "end_date"),
+            ("created_at", "created_at"),
+            ("current", "current"),
+            ("target", "target"),
+        ),
+        field_labels={
+            "current": _("current"),
+            "target": _("target"),
+            "start_date": _("start date"),
+            "end_date": _("end date"),
+            "created_at": _("created at"),
+        },
+    )
+
     title: django_filters.CharFilter = django_filters.CharFilter(
         field_name="title", lookup_expr="icontains"
     )
