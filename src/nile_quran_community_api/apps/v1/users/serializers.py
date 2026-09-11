@@ -99,7 +99,7 @@ class UserSerializer(serializers.ModelSerializer):
 
         validated_data["password"] = make_password(validated_data["password"])
         # NOTE: new accounts require admin activation, regardless of who created them.
-        validated_data["is_active"] = True
+        validated_data["is_active"] = False
 
         return super().create(validated_data)
 
