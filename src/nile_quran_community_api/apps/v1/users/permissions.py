@@ -45,16 +45,13 @@ class CanModifyActivity(BasePermission):
         if not student_id:
             return None
 
-        return models.User.objects.get(id=student_id).supervisor
+        student: models.User | None = models.User.objects.filter(id=student_id).first()
+        return student.supervisor if student else None
 
-    def has_permission(self, request: Request, view: APIView):
-        supervisor: models.User | None = self._supervisor(view)
-        if supervisor:
-            return request.user == supervisor
-
-        return is_admin_user(request)
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        return is_admin_user(request) or (request.user == self._supervisor(view))
 
     def has_object_permission(
         self, request: Request, view: APIView, obj: models.Activity
     ) -> bool:
-        return is_admin_user(request) or request.user == obj.user.supervisor
+        return is_admin_user(request) or (request.user == self._supervisor(view))
