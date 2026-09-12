@@ -1,11 +1,8 @@
-import typing as t
-
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import ASCIIUsernameValidator
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django_stubs_ext import StrPromise
 
 arabic_name_validator = RegexValidator(
     regex=r"^[؀-ۿ\s]+$",
@@ -24,9 +21,6 @@ class User(AbstractUser):
     class Meta:
         verbose_name = _("user")
         verbose_name_plural = _("users")
-        permissions: t.Iterable[tuple[str, str | StrPromise]] = (
-            ("change_user_activities", _("Can change the user's activities")),
-        )
         ordering = ["id"]
 
     username = models.CharField(
