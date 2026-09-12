@@ -34,7 +34,6 @@ class TestGoalView:
     ):
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_admin_token}")
         response = client.post("/goals/", data=goal_data, format="json")
-        assert response.data["scope"] == goal_data["scope"]
         assert response.data["title"] == goal_data["title"]
         assert response.data["description"] == goal_data["description"]
         assert response.data["current"] == goal_data["current"]
@@ -209,14 +208,6 @@ class TestGoalPermissions:
 
 @pytest.mark.django_db
 class TestGoalFilters:
-    def test_filter_by_scope(
-        self, client: APIClient, goals_for_filtering, existing_user
-    ):
-        client.force_authenticate(user=existing_user)
-        response = client.get("/goals/?scope=monthly")
-        assert response.status_code == status.HTTP_200_OK
-        assert all(goal["scope"] == "monthly" for goal in response.data["results"])
-
     def test_filter_by_title(
         self, client: APIClient, goals_for_filtering, existing_user
     ):
@@ -285,8 +276,8 @@ class TestGoalFilters:
         self, client: APIClient, goals_for_filtering, existing_user
     ):
         client.force_authenticate(user=existing_user)
-        response = client.get("/goals/?scope=monthly&current_exact=5")
+        response = client.get("/goals/?title=Revision&current_exact=5")
         assert response.status_code == status.HTTP_200_OK
         for goal in response.data["results"]:
-            assert goal["scope"] == "monthly"
+            assert "Revision" in goal["title"]
             assert goal["current"] == 5
