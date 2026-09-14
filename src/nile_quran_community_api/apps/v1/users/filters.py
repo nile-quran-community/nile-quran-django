@@ -28,6 +28,9 @@ class UserFilter(django_filters.FilterSet):
     username: django_filters.CharFilter = django_filters.CharFilter(
         field_name="username", lookup_expr="icontains"
     )
+    username_exact: django_filters.CharFilter = django_filters.CharFilter(
+        field_name="username", lookup_expr="iexact"
+    )
     first_name: django_filters.CharFilter = django_filters.CharFilter(
         field_name="first_name", lookup_expr="icontains"
     )
