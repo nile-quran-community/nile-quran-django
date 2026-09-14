@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import ASCIIUsernameValidator
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
+from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
 arabic_name_validator = RegexValidator(
@@ -22,6 +23,13 @@ class User(AbstractUser):
         verbose_name = _("user")
         verbose_name_plural = _("users")
         ordering = ["id"]
+        constraints = [
+            models.UniqueConstraint(
+                Lower("username"),
+                name="unique_username_ci",
+                violation_error_message=_("A user with that username already exists."),
+            ),
+        ]
 
     username = models.CharField(
         _("username"),

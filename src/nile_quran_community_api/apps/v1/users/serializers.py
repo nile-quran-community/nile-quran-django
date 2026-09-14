@@ -84,7 +84,7 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs: dict = {"password": {"write_only": True}}
 
     def validate_username(self, value: str) -> str:
-        queryset = models.User.objects.filter(username__exact=value)
+        queryset = models.User.objects.filter(username__iexact=value)
         if self.instance:
             queryset = queryset.exclude(pk=self.instance.pk)
 
