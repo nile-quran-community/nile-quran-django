@@ -98,8 +98,8 @@ class UserSerializer(serializers.ModelSerializer):
             validated_data["groups"][i] = Group.objects.get(name=grp)
 
         validated_data["password"] = make_password(validated_data["password"])
-        # NOTE: new accounts require admin activation, regardless of who created them.
-        validated_data["is_active"] = True
+        # WARN: new accounts require admin activation, regardless of who created them.
+        validated_data["is_active"] = False
 
         return super().create(validated_data)
 
