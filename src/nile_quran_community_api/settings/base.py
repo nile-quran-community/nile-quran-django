@@ -139,3 +139,65 @@ SPECTACULAR_SETTINGS: dict[str, str | bool] = {
     "DESCRIPTION": "Nile Quran Community API for keeping track of achievements",
     "VERSION": API_VERSION,
 }
+
+# NOTE: Group name to permissions mapping
+GROUP_PERMISSIONS: dict[str, tuple[str, ...]] = {
+    # NOTE: Main roles
+    "Admin": (
+        "add_user",
+        "view_user",
+        "change_user",
+        "delete_user",
+        "add_group",
+        "view_group",
+        "change_group",
+        "delete_group",
+        "add_activity",
+        "view_activity",
+        "change_activity",
+        "delete_activity",
+        "add_goal",
+        "view_goal",
+        "change_goal",
+        "delete_goal",
+        "add_announcement",
+        "view_announcement",
+        "change_announcement",
+        "delete_announcement",
+    ),
+    "Supervisor": (
+        "view_user",
+        "add_activity",
+        "view_activity",
+        "change_activity",
+        "delete_activity",
+        "view_goal",
+        "view_announcement",
+    ),
+    "Student": (
+        "view_user",
+        "view_activity",
+        "view_goal",
+        "view_announcement",
+    ),
+    # NOTE: Additional NQC teams
+    "Treasurer": (
+        "add_goal",
+        "view_goal",
+        "change_goal",
+        "delete_goal",
+    ),
+    "Media": (
+        "add_goal",
+        "view_goal",
+        "change_goal",
+        "delete_goal",
+        "add_announcement",
+        "view_announcement",
+        "change_announcement",
+        "delete_announcement",
+    ),
+    "Developer": (),
+    "Researcher": (),
+    "Beast": (),
+}

@@ -10,11 +10,10 @@ env:
   REGISTRY_USER: ${{ github.actor }}
   REGISTRY_PASS: ${{ github.token }}
   IMAGE_NAME: nile-quran-django
-  IMAGE_PLATFORMS: linux/amd64,linux/arm64
   LICENSE_SPDX: GPL-3.0-or-later
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       version: ${{ steps.check.outputs.version }}
     steps:
@@ -37,28 +36,81 @@ jobs:
 
       - id: check
         name: Check release version and commit
+        env:
+          GH_DEFAULT_BRANCH: "${{ github.event.repository.default_branch }}"
         run: |
           source .venv/bin/activate
+
           echo "::group::Check tag commit matches latest commit on main"
-          MAIN_SHA="$(git rev-parse --verify origin/main)"
-          if [ "$MAIN_SHA" != "$GITHUB_SHA" ]; then
-            echo "::error title=Commit mismatch::Latest commit on main ($MAIN_SHA) does not match tag commit ($GITHUB_SHA)"
+          MAIN_SHA="$(git rev-parse --verify origin/${GH_DEFAULT_BRANCH})"
+          if [ "${MAIN_SHA}" != "${GITHUB_SHA}" ]; then
+            echo "::error title=Commit mismatch::Latest commit on ${GH_DEFAULT_BRANCH} (${MAIN_SHA}) does not match tag commit (${GITHUB_SHA})"
             exit 1
           fi
           echo "::endgroup::"
+
           echo "::group::Check project version matches tag"
           PACKAGE_VERSION="$(python -m setuptools_scm)"
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
-            echo "::error title=Version mismatch::Package version ($PACKAGE_VERSION) does not match tag version ($TAG_VERSION)"
+          if [ "${PACKAGE_VERSION}" != "${TAG_VERSION}" ]; then
+            echo "::error title=Version mismatch::Package version (${PACKAGE_VERSION}) does not match tag version (${TAG_VERSION})"
             exit 1
           fi
-          echo "version=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
           echo "::endgroup::"
+
+          echo "version=${PACKAGE_VERSION}" >> "${GITHUB_OUTPUT}"
 
   build:
     needs: prepare
-    runs-on: ubuntu-latest
+    runs-on: ${{ case(startsWith(matrix.arch, 'arm'), 'ubuntu-26.04-arm', 'ubuntu-26.04') }}
+    strategy:
+      fail-fast: true
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - id: checkout
+        name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - id: build
+        name: Build image
+        uses: redhat-actions/buildah-build@3a51aade9afa17e5c78256bcbe2e1ee08c7b995b # v3.0.2
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        with:
+          containerfiles: Dockerfile
+          image: ${{ env.IMAGE_NAME }}
+          tags: ${{ env.VERSION }}-${{ matrix.arch }}
+          build-args: |-
+            SOURCE_URL=https://github.com/${{ github.repository }}
+            VCS_REF=${{ github.sha }}
+            VERSION=${{ env.VERSION }}
+            LICENSE=${{ env.LICENSE_SPDX }}
+
+      - id: archive-image
+        name: Export image to archive
+        env:
+          ARCH: ${{ matrix.arch }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          buildah push "${IMAGE_NAME}:${VERSION}-${ARCH}" "oci-archive:${IMAGE_NAME}-${VERSION}-${ARCH}.tar"
+
+      - id: upload-artifact
+        name: Upload image archive as artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        with:
+          name: ${{ env.IMAGE_NAME }}-${{ env.VERSION }}-${{ matrix.arch }}
+          path: ${{ env.IMAGE_NAME }}-${{ env.VERSION }}-${{ matrix.arch }}.tar
+          retention-days: 1
+
+  push:
+    needs: [prepare, build]
+    runs-on: ubuntu-26.04
     environment:
       name: ghcr
       url: https://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}
@@ -70,34 +122,28 @@ jobs:
     outputs:
       digest: ${{ steps.push.outputs.digest }}
     steps:
-      - id: checkout
-        name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: download-artifact
+        name: Download image archives
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          fetch-depth: 0
-          fetch-tags: true
+          merge-multiple: true
 
-      - id: install
-        name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y qemu-user-static
-
-      - id: build
-        name: Build image
-        uses: redhat-actions/buildah-build@3a51aade9afa17e5c78256bcbe2e1ee08c7b995b # v3.0.2
+      - id: load-images
+        name: Load images from archives
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
-        with:
-          containerfiles: Dockerfile
-          platforms: ${{ env.IMAGE_PLATFORMS }}
-          image: ${{ env.IMAGE_NAME }}
-          tags: ${{ env.VERSION }} latest
-          build-args: |-
-            SOURCE_URL=https://github.com/${{ github.repository }}
-            VCS_REF=${{ github.sha }}
-            VERSION=${{ env.VERSION }}
-            LICENSE=${{ env.LICENSE_SPDX }}
+        run: |
+          echo "::group::Creating image manifests"
+          buildah manifest create "${IMAGE_NAME}:${VERSION}"
+          buildah manifest create "${IMAGE_NAME}:latest"
+          echo "::endgroup::"
+
+          echo "::group::Adding archives to manifests"
+          while read -r archive; do
+            buildah manifest add --all "${IMAGE_NAME}:${VERSION}" "oci-archive:${archive}"
+            buildah manifest add --all "${IMAGE_NAME}:latest" "oci-archive:${archive}"
+          done < <(find . -name "${IMAGE_NAME}-${VERSION}-*.tar" -type f)
+          echo "::endgroup::"
 
       - id: login
         name: Login to registry
@@ -110,10 +156,12 @@ jobs:
       - id: push
         name: Push image to registry
         uses: redhat-actions/push-to-registry@94ade333c38ecc0e60e94785125d9a52ca423b37 # v3.0.0
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
         with:
           registry: ${{ env.REGISTRY }}
-          image: ${{ steps.build.outputs.image }}
-          tags: ${{ steps.build.outputs.tags }}
+          image: ${{ env.IMAGE_NAME }}
+          tags: ${{ env.VERSION }} latest
           extra-args: |-
             --compression-format
             zstd
@@ -129,13 +177,13 @@ jobs:
           push-to-registry: true
 
   deploy:
-    needs: [prepare, build]
-    runs-on: ubuntu-latest
+    needs: [prepare, push]
+    runs-on: ubuntu-26.04
     environment:
       name: production
       url: https://nile-quran-community.com
     env:
-      NEW_IMAGE_TAG: "${{ needs.prepare.outputs.version }}@${{ needs.build.outputs.digest }}"
+      NEW_IMAGE_TAG: "${{ needs.prepare.outputs.version }}@${{ needs.push.outputs.digest }}"
     steps:
       - id: app-token
         name: Create semantic release app token

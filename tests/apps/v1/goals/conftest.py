@@ -20,7 +20,6 @@ def test_goal(db) -> Goal:
 @pytest.fixture
 def goal_data() -> dict:
     return {
-        "scope": "monthly",
         "title": "goal 1",
         "description": "goal 1 description",
         "target": 10,
@@ -38,7 +37,6 @@ def load_data(db, django_db_blocker):
 @pytest.fixture
 def updated_goal() -> dict:
     return {
-        "scope": "yearly",
         "title": "new title",
         "description": "new description",
         "target": 5,
@@ -52,7 +50,6 @@ def goals_for_filtering(db):
 
     goals = [
         Goal.objects.create(
-            scope="monthly",
             title="Quran Reading",
             description="Read 5 pages daily",
             target=30,
@@ -60,7 +57,6 @@ def goals_for_filtering(db):
             created_at=datetime.date(2025, 3, 2),
         ),
         Goal.objects.create(
-            scope="yearly",
             title="Memorization",
             description="Memorize 2 surahs",
             target=2,
@@ -68,7 +64,6 @@ def goals_for_filtering(db):
             created_at=datetime.date(2025, 2, 24),
         ),
         Goal.objects.create(
-            scope="monthly",
             title="Revision",
             description="Revise Juz Amma",
             target=5,

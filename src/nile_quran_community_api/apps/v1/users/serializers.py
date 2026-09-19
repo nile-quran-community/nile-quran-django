@@ -84,7 +84,7 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs: dict = {"password": {"write_only": True}}
 
     def validate_username(self, value: str) -> str:
-        queryset = models.User.objects.filter(username__exact=value)
+        queryset = models.User.objects.filter(username__iexact=value)
         if self.instance:
             queryset = queryset.exclude(pk=self.instance.pk)
 
@@ -98,7 +98,7 @@ class UserSerializer(serializers.ModelSerializer):
             validated_data["groups"][i] = Group.objects.get(name=grp)
 
         validated_data["password"] = make_password(validated_data["password"])
-        # NOTE: new accounts require admin activation, regardless of who created them.
+        # WARN: new accounts require admin activation, regardless of who created them.
         validated_data["is_active"] = False
 
         return super().create(validated_data)

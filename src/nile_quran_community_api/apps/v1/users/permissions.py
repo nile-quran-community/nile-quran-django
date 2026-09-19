@@ -5,12 +5,16 @@ from rest_framework.views import APIView
 from . import models
 
 
+def is_admin_user(request: Request) -> bool:
+    return request.user.groups.filter(name="Admin").exists()
+
+
 class CanCreateUser(BasePermission):
     def has_permission(self, request: Request, view: APIView) -> bool:
         if not request.user.is_authenticated:
             return not any(field in request.data for field in ("groups", "supervisor"))
 
-        return request.user.groups.filter(name="Admin").exists()
+        return request.user.has_perm("users.add_user")
 
 
 class CanModifyUser(BasePermission):
@@ -23,46 +27,31 @@ class CanModifyUser(BasePermission):
             "is_active",
         )
 
+    def _admin_only_change(self, request: Request) -> bool:
+        return any(field in request.data for field in self._ADMIN_ONLY_FIELDS)
+
     def has_object_permission(
         self, request: Request, view: APIView, obj: models.User
     ) -> bool:
-        if not request.user:
-            return False
-        if any(field in request.data for field in self._ADMIN_ONLY_FIELDS):
-            return request.user.groups.filter(name="Admin").exists()
+        if self._admin_only_change(request):
+            return is_admin_user(request)
+
         return obj == request.user or request.user.has_perm("users.change_user")
 
 
-class CanDeleteUser(BasePermission):
-    def has_object_permission(
-        self, request: Request, view: APIView, obj: models.User
-    ) -> bool:
-        if request.user and request.user.has_perm("users.delete_user"):
-            return True
-        return obj == request.user
-
-
 class CanModifyActivity(BasePermission):
+    def _supervisor(self, view: APIView) -> models.User | None:
+        student_id: int | None = view.kwargs.get("uid")
+        if not student_id:
+            return None
+
+        student: models.User | None = models.User.objects.filter(id=student_id).first()
+        return student.supervisor if student else None
+
     def has_permission(self, request: Request, view: APIView) -> bool:
-        return (
-            request.user is not None
-            and request.user.is_authenticated
-            and (
-                request.user.groups.filter(name="Admin").exists()
-                or request.user
-                == models.User.objects.get(id=view.kwargs.get("uid")).supervisor
-            )
-        )
+        return is_admin_user(request) or (request.user == self._supervisor(view))
 
     def has_object_permission(
         self, request: Request, view: APIView, obj: models.Activity
     ) -> bool:
-        return (
-            request.user is not None
-            and request.user.is_authenticated
-            and (
-                request.user.groups.filter(name="Admin").exists()
-                or request.user
-                == models.User.objects.get(id=view.kwargs.get("uid")).supervisor
-            )
-        )
+        return is_admin_user(request) or (request.user == self._supervisor(view))

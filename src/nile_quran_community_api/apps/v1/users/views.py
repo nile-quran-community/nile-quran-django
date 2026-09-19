@@ -8,14 +8,15 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
-from rest_framework import generics, permissions, viewsets
+from rest_framework import generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
+from rest_framework.permissions import BasePermission, DjangoModelPermissions
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from . import filters, models, serializers
-from . import permissions as userperms
+from . import permissions as perms
 
 
 @extend_schema_view(
@@ -42,16 +43,12 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.UserSerializer
     filterset_class = filters.UserFilter
 
-    def get_permissions(self) -> t.Sequence[permissions.BasePermission]:
-        permission_classes: t.Sequence[type[permissions.BasePermission]] = []
+    def get_permissions(self) -> t.Sequence[BasePermission]:
+        permission_classes = [DjangoModelPermissions]
         if self.action == "create":
-            permission_classes = [userperms.CanCreateUser]
-        elif self.action in ("list", "retrieve", "current_user"):
-            permission_classes = [permissions.IsAuthenticated]
+            permission_classes = [perms.CanCreateUser]
         elif self.action in ("update", "partial_update"):
-            permission_classes = [permissions.IsAuthenticated, userperms.CanModifyUser]
-        elif self.action == "destroy":
-            permission_classes = [permissions.IsAuthenticated, userperms.CanDeleteUser]
+            permission_classes = [perms.CanModifyUser]
         return [permission() for permission in permission_classes]
 
     @action(detail=False, methods=["GET"], url_path="me")
@@ -65,15 +62,10 @@ class UserActivitiesViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ActivitySerializer
     filterset_class = filters.UserActivitiesFilter
 
-    def get_permissions(self) -> t.Sequence[permissions.BasePermission]:
-        permission_classes: t.Sequence[type[permissions.BasePermission]] = []
-        if self.action in ("list", "retrieve"):
-            permission_classes = [permissions.IsAuthenticated]
-        elif self.action in ("create", "update", "partial_update", "destroy"):
-            permission_classes = [
-                permissions.IsAuthenticated,
-                userperms.CanModifyActivity,
-            ]
+    def get_permissions(self) -> t.Sequence[BasePermission]:
+        permission_classes = [DjangoModelPermissions]
+        if self.action in ("create", "update", "partial_update", "destroy"):
+            permission_classes = [DjangoModelPermissions, perms.CanModifyActivity]
 
         return [permission() for permission in permission_classes]
 
@@ -99,9 +91,9 @@ class UserActivitiesViewSet(viewsets.ModelViewSet):
 
 @extend_schema(tags=["points"])
 class UserPointsListView(generics.ListAPIView):
-    queryset = models.Activity.objects.all()
     serializer_class = serializers.UserPointsSerializer
     filterset_class = filters.ActivitiesFilter
+    queryset = models.Activity.objects.all()
 
     @extend_schema(
         parameters=[
