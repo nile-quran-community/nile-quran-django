@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-23 19:18+0000\n"
+"POT-Creation-Date: 2026-09-19 12:59+0000\n"
 "PO-Revision-Date: 2026-03-23 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Arabic <ar@li.org>\n"
@@ -11,60 +11,80 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#: filters.py:18
 msgid "Username"
 msgstr "اسم المستخدم"
 
+#: filters.py:19
 msgid "Email"
 msgstr "البريد الإلكتروني"
 
+#: filters.py:20
 msgid "First Name"
 msgstr "الاسم الأول"
 
+#: filters.py:21
 msgid "Last Name"
 msgstr "اسم العائلة"
 
+#: filters.py:73
 msgid "Activity Date"
 msgstr "تاريخ النشاط"
 
+#: filters.py:74 models.py:196
 msgid "Category"
 msgstr "فئة"
 
+#: filters.py:119 models.py:208
 msgid "value"
 msgstr "قيمة"
 
+#: filters.py:126
 msgid "Filter categories by ID"
 msgstr "تصفية الفئات حسب المعرف"
 
+#: filters.py:129
 msgid "Filter categories by name"
 msgstr "تصفية الفئات حسب الاسم"
 
+#: filters.py:134
 msgid "Filter categories by value"
 msgstr "تصفية الفئات حسب القيمة"
 
+#: migrations/0002_seed_categories.py:12
 msgid "Attending thought session"
 msgstr "حضور جلسة الخاطرة"
 
+#: migrations/0002_seed_categories.py:18
 msgid "Preparing a thought"
 msgstr "تحضير خاطرة"
 
+#: migrations/0002_seed_categories.py:24
 msgid "Reading Quran"
 msgstr "قراءة القرآن"
 
+#: migrations/0002_seed_categories.py:30
 msgid "Reciting Quran"
 msgstr "تسميع القرآن"
 
+#: migrations/0002_seed_categories.py:36
 msgid "Inviting a new member"
 msgstr "دعوة عضو جديد"
 
+#: migrations/0002_seed_categories.py:42
+#: migrations/0010_alter_category_6_name.py:17
 msgid "Attending team meeting"
 msgstr "حضور اجتماع الفريق"
 
+#: migrations/0010_alter_category_6_name.py:9
 msgid "Contributing to team activities"
 msgstr "المساهمة في أنشطة الفريق"
 
+#: models.py:11
 msgid "Only Arabic letters are allowed."
 msgstr "يسمح فقط بالحروف العربية."
 
+#: models.py:16
 msgid ""
 "Enter a valid username. This value may contain only unaccented lowercase a-z "
 "and uppercase A-Z letters, numbers, and @/./+/-/_ characters."
@@ -72,78 +92,212 @@ msgstr ""
 "يرجى إدخال اسم مستخدم صالح. يجب ألا يحتوي إلا على حروف إنجليزية صغيرة أو "
 "كبيرة، وأرقام، والرموز @/./+/-/_."
 
+#: models.py:23
+msgid "Undergraduate student"
+msgstr "طالب بكالوريوس"
+
+#: models.py:24
+msgid "Postgraduate student"
+msgstr "طالب دراسات عليا"
+
+#: models.py:25 models.py:33
+msgid "Other"
+msgstr "أخرى"
+
+#: models.py:29
+msgid "Engineering"
+msgstr "هندسة"
+
+#: models.py:30
+msgid "Computer Science / AI"
+msgstr "علوم حاسب / ذكاء اصطناعي"
+
+#: models.py:31
+msgid "Business Administration"
+msgstr "إدارة أعمال"
+
+#: models.py:32
+msgid "Biotechnology"
+msgstr "التكنولوجيا الحيوية"
+
+#: models.py:37
+msgid "First year"
+msgstr "السنة الأولى"
+
+#: models.py:38
+msgid "Second year"
+msgstr "السنة الثانية"
+
+#: models.py:39
+msgid "Third year"
+msgstr "السنة الثالثة"
+
+#: models.py:40
+msgid "Fourth year"
+msgstr "السنة الرابعة"
+
+#: models.py:41
+msgid "Fifth year"
+msgstr "السنة الخامسة"
+
+#: models.py:42
+msgid "Graduate"
+msgstr "خريج"
+
+#: models.py:46
+msgid "Beginner (no prior exposure to tajweed rules)"
+msgstr "مبتدئ (لم يسبق التعرض لأحكام التجويد)"
+
+#: models.py:47
+msgid "Intermediate (basic knowledge of tajweed rules)"
+msgstr "متوسط (على علم بسيط بأحكام التجويد)"
+
+#: models.py:48
+msgid "Proficient (skilled knowledge of tajweed rules)"
+msgstr "متقن (على علم وإجادة لأحكام التجويد)"
+
+#: models.py:53 models.py:229
 msgid "user"
 msgstr "مستخدم"
 
-#, fuzzy
-#| msgid "user"
+#: models.py:54
 msgid "users"
 msgstr "مستخدمون"
 
-msgid "Can change the user's activities"
-msgstr "يمكن تغيير أنشطة المستخدم"
+#: models.py:60 models.py:73
+msgid "A user with that username already exists."
+msgstr "اسم المستخدم محجوز بالفعل"
 
-#, fuzzy
-#| msgid "Username"
+#: models.py:65
 msgid "username"
 msgstr "اسم المستخدم"
 
+#: models.py:69
 msgid "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
 msgstr ""
 "مطلوب. 150 حرفًا أو أقل. يُسمح فقط بالأحرف والأرقام والرموز @ و . و + و - و _."
 
-msgid "A user with that username already exists."
-msgstr "اسم المستخدم محجوز بالفعل"
-
-#, fuzzy
-#| msgid "First Name"
+#: models.py:77
 msgid "first name"
 msgstr "الاسم الأول"
 
-#, fuzzy
-#| msgid "Last Name"
+#: models.py:83
 msgid "last name"
 msgstr "اسم العائلة"
 
+#: models.py:89
 msgid "email address"
 msgstr "عنوان بريد إلكتروني"
 
+#: models.py:99
 msgid "User referrer reference."
 msgstr "مرجع إحالة المستخدم."
 
+#: models.py:107
 msgid "User supervisor reference (required for students)."
 msgstr "مرجع مشرف المستخدم (مطلوب للطلاب)."
 
+#: models.py:114
+msgid "phone number"
+msgstr "رقم الهاتف"
+
+#: models.py:114
+msgid "Include your country code."
+msgstr "قم بتضمين رمز الدولة."
+
+#: models.py:116
+msgid "birth date"
+msgstr "تاريخ الميلاد"
+
+#: models.py:119
+msgid "academic status"
+msgstr "الحالة الدراسية"
+
+#: models.py:125
+msgid "academic status (other)"
+msgstr "الحالة الدراسية (أخرى)"
+
+#: models.py:129
+msgid "faculty"
+msgstr "الكلية"
+
+#: models.py:131
+msgid "faculty (other)"
+msgstr "الكلية (أخرى)"
+
+#: models.py:134
+msgid "academic year"
+msgstr "السنة الدراسية"
+
+#: models.py:140
+msgid "residence"
+msgstr "مكان الإقامة الحالي"
+
+#: models.py:141
+msgid "hometown"
+msgstr "الموطن الأصلي"
+
+#: models.py:144
+msgid "memorized Quran parts (juz)"
+msgstr "عدد الأجزاء المحفوظة من القرآن"
+
+#: models.py:150
+msgid "tajweed level"
+msgstr "مستوى إتقان التجويد"
+
+#: models.py:157
+msgid "has prior Islamic studies"
+msgstr "تعلم علمًا شرعيًا من قبل"
+
+#: models.py:160
+msgid "Islamic studies source"
+msgstr "مصدر تلقي العلم الشرعي"
+
+#: models.py:163
+msgid "skills"
+msgstr "المهارات"
+
+#: models.py:197
 msgid "Categories"
 msgstr "الفئات"
 
+#: models.py:201
 msgid "name"
 msgstr "الاسم"
 
+#: models.py:219
 msgid "Activity"
 msgstr "نشاط"
 
+#: models.py:220
 msgid "Activities"
 msgstr "أنشطة"
 
+#: models.py:234
 msgid "category"
 msgstr "فئة"
 
+#: models.py:237
 msgid "date"
 msgstr "تاريخ"
 
+#: models.py:242
 msgid "multiplier"
 msgstr "مضاعف"
 
+#: serializers.py:48
 msgid "No referrer was found with the given username"
 msgstr "لم يتم العثور على مرجع باسم المستخدم المحدد"
 
+#: serializers.py:57
 msgid "No supervisor was found with the given username"
 msgstr "لم يتم العثور على مشرف باسم المستخدم المحدد"
 
+#: serializers.py:109
 msgid "Username already taken"
 msgstr "اسم المستخدم محجوز بالفعل"
 
+#: views.py:76 views.py:164
 msgid "No user was found with the given ID."
 msgstr "لم يتم العثور على مستخدم بالمعرف المحدد."
 

@@ -1,9 +1,10 @@
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import ASCIIUsernameValidator
-from django.core.validators import MinValueValidator, RegexValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
+from phonenumber_field.modelfields import PhoneNumberField
 
 arabic_name_validator = RegexValidator(
     regex=r"^[؀-ۿ\s]+$",
@@ -16,6 +17,35 @@ username_validator = ASCIIUsernameValidator(
         "a-z and uppercase A-Z letters, numbers, and @/./+/-/_ characters."
     ),
 )
+
+
+class AcademicStatus(models.TextChoices):
+    UNDERGRADUATE = "undergraduate", _("Undergraduate student")
+    POSTGRADUATE = "postgraduate", _("Postgraduate student")
+    OTHER = "other", _("Other")
+
+
+class Faculty(models.TextChoices):
+    ENGINEERING = "engineering", _("Engineering")
+    COMPUTER_SCIENCE = "computer_science", _("Computer Science / AI")
+    BUSINESS = "business", _("Business Administration")
+    BIOTECHNOLOGY = "biotechnology", _("Biotechnology")
+    OTHER = "other", _("Other")
+
+
+class AcademicYear(models.TextChoices):
+    FIRST = "1", _("First year")
+    SECOND = "2", _("Second year")
+    THIRD = "3", _("Third year")
+    FOURTH = "4", _("Fourth year")
+    FIFTH = "5", _("Fifth year")
+    GRADUATE = "graduate", _("Graduate")
+
+
+class TajweedLevel(models.TextChoices):
+    BEGINNER = "beginner", _("Beginner (no prior exposure to tajweed rules)")
+    INTERMEDIATE = "intermediate", _("Intermediate (basic knowledge of tajweed rules)")
+    PROFICIENT = "proficient", _("Proficient (skilled knowledge of tajweed rules)")
 
 
 class User(AbstractUser):
@@ -77,6 +107,85 @@ class User(AbstractUser):
         help_text=_("User supervisor reference (required for students)."),
         related_name="supervised",
     )
+
+    # NOTE: community profile fields. Self-editable (see CanModifyUser), collected
+    # progressively after signup rather than required at registration time.
+    phone_number = PhoneNumberField(
+        _("phone number"), blank=True, help_text=_("Include your country code.")
+    )
+    birth_date = models.DateField(_("birth date"), null=True, blank=True)
+
+    academic_status = models.CharField(
+        _("academic status"),
+        max_length=20,
+        choices=AcademicStatus.choices,
+        blank=True,
+    )
+    academic_status_other = models.CharField(
+        _("academic status (other)"), max_length=100, blank=True
+    )
+
+    faculty = models.CharField(
+        _("faculty"), max_length=20, choices=Faculty.choices, blank=True
+    )
+    faculty_other = models.CharField(_("faculty (other)"), max_length=100, blank=True)
+
+    academic_year = models.CharField(
+        _("academic year"),
+        max_length=10,
+        choices=AcademicYear.choices,
+        blank=True,
+    )
+
+    residence = models.CharField(_("residence"), max_length=255, blank=True)
+    hometown = models.CharField(_("hometown"), max_length=255, blank=True)
+
+    memorized_juz = models.PositiveSmallIntegerField(
+        _("memorized Quran parts (juz)"),
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(30)],
+    )
+    tajweed_level = models.CharField(
+        _("tajweed level"),
+        max_length=15,
+        choices=TajweedLevel.choices,
+        blank=True,
+    )
+
+    has_islamic_studies = models.BooleanField(
+        _("has prior Islamic studies"), null=True, blank=True
+    )
+    islamic_studies_source = models.CharField(
+        _("Islamic studies source"), max_length=255, blank=True
+    )
+
+    skills = models.TextField(_("skills"), blank=True)
+
+    @property
+    def is_profile_complete(self) -> bool:
+        """
+        Whether every community profile field has been filled in.
+        """
+        required: list[object] = [
+            self.phone_number,
+            self.birth_date,
+            self.academic_status,
+            self.faculty,
+            self.academic_year,
+            self.residence,
+            self.hometown,
+            self.memorized_juz is not None,
+            self.tajweed_level,
+            self.has_islamic_studies is not None,
+        ]
+        if self.academic_status == AcademicStatus.OTHER:
+            required.append(self.academic_status_other)
+        if self.faculty == Faculty.OTHER:
+            required.append(self.faculty_other)
+        if self.has_islamic_studies:
+            required.append(self.islamic_studies_source)
+        return all(required)
 
 
 class Category(models.Model):

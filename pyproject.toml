@@ -13,6 +13,7 @@ dependencies = [
   "django~=6.0",
   "django-cors-headers~=4.9",
   "django-filter~=26.1",
+  "django-phonenumber-field[phonenumbers]~=8.0",
   "django-stubs~=6.0",
   "djangorestframework~=3.18",
   "djangorestframework-simplejwt~=5.5",
