@@ -15,7 +15,7 @@ from rest_framework.permissions import BasePermission, DjangoModelPermissions
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from . import filters, models, serializers
+from . import filters, models, serializers, services
 from . import permissions as perms
 
 
@@ -108,29 +108,17 @@ class UserPointsListView(generics.ListAPIView):
         ]
     )
     def get(self, request: Request, *args, **kwargs) -> Response:
-        response_data: list[dict] = []
         activities: QuerySet[models.Activity] = self.filter_queryset(
             self.get_queryset()
         )
-        students: QuerySet[models.User] = models.User.objects.filter(
-            groups__name="Student", is_active=True
-        )
-
-        for student in students:
-            acts: QuerySet[models.Activity] = activities.filter(user=student)
-            points: int = (
-                acts.aggregate(points=Sum(F("category__value") * F("multiplier")))[
-                    "points"
-                ]
-                or 0
-            )
-            response_data.append(
-                {
-                    "user": student.pk,
-                    "points": points,
-                    "activities": acts,
-                }
-            )
+        response_data: list[dict] = [
+            {
+                "user": student.pk,
+                "points": student.points,
+                "activities": student.scored_activities,
+            }
+            for student in services.students_with_points(activities)
+        ]
 
         # NOTE: sort response data based on the defined ordering fields
         ordering: list[str] = request.GET.get("ordering", "").split(",")
