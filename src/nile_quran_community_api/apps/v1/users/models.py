@@ -77,6 +77,15 @@ class User(AbstractUser):
         help_text=_("User supervisor reference (required for students)."),
         related_name="supervised",
     )
+    discord_id = models.CharField(
+        _("discord ID"),
+        max_length=32,
+        blank=True,
+        help_text=_(
+            "Discord account ID, used to mention the user in announcements. "
+            "Found via Discord's Developer Mode (right click a user, Copy User ID)."
+        ),
+    )
 
 
 class Category(models.Model):
