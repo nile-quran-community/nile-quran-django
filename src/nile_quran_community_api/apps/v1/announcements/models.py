@@ -4,6 +4,15 @@ from django.utils.translation import gettext_lazy as _
 
 
 class Announcement(models.Model):
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("reference_key",),
+                condition=~models.Q(reference_key=""),
+                name="unique_announcement_reference_key",
+            ),
+        ]
+
     class Type(models.TextChoices):
         GENERAL = "general", _("General")
         WEEKLY_REFLECTION = "weekly_reflection", _("Weekly Reflection")
@@ -22,6 +31,7 @@ class Announcement(models.Model):
     content = models.TextField()
     status = models.CharField(max_length=16, choices=Status, default=Status.DRAFT)
     publish_at = models.DateTimeField(blank=True, null=True)
+    reference_key = models.CharField(max_length=64, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
