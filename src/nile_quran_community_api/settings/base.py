@@ -80,6 +80,10 @@ LANGUAGE_CODE: str = "en-us"
 
 TIME_ZONE: str = "UTC"
 
+# The community's local calendar. Hijri month boundaries are evaluated against this
+# rather than TIME_ZONE, so a new month starts at local midnight and not at 02:00.
+ANNOUNCEMENTS_TIMEZONE: str = "Africa/Cairo"
+
 USE_I18N: bool = True
 
 LANGUAGE_CODE = "en"

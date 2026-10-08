@@ -25,6 +25,12 @@ SECRET_KEY: str = os.getenv(
     "django-dev-d6d=nm0@u_1+&f_go09c8w07-t8@z$wr*(wi(vn*$a9!bk=^o3",
 )
 
+DISCORD_BOT_TOKEN: str = os.getenv("DISCORD_BOT_TOKEN", "")
+
+DISCORD_ANNOUNCEMENTS_CHANNEL_ID: str = os.getenv(
+    "DISCORD_ANNOUNCEMENTS_CHANNEL_ID", ""
+)
+
 # WARN: Database defaults to db.sqlite in nile_quran_community_api directory if DATABASE_URL is not set
 # Refer to https://pypi.org/project/dj-database-url/ for URL schemas for different databases
 DATABASES: dict[str, dj_database_url.DBConfig] = {
