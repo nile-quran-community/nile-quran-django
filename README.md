@@ -113,6 +113,26 @@ python src/manage.py runserver
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## Scheduled commands ⏰
+
+Announcements reach Discord through two management commands. Both are one-shot and
+stateless, so they run as Kubernetes CronJobs against the published image (the manifests
+live in the infrastructure repository, not here).
+
+| Command                   | Schedule            | What it does                                                                                                                                                         |
+| ------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `publish_announcements`   | `*/5 * * * *`       | Posts every announcement whose `publish_at` has passed and that Discord has not already received. Failures are recorded on the delivery and retried on the next run. |
+| `generate_top_performers` | `0 1 * * *` (daily) | Exits unless today is the first of a Hijri month. On the first, writes the previous Hijri month's top-three leaderboard and queues it for delivery.                  |
+
+`generate_top_performers` runs daily rather than monthly so that a day the cluster was
+unavailable is picked up on the next run; reruns update the existing announcement and
+edit the message already in Discord instead of posting a second one. Pass `--date` and
+`--force` to exercise it by hand.
+
+Both require `DISCORD_BOT_TOKEN` and `DISCORD_ANNOUNCEMENTS_CHANNEL_ID`. With either unset, `publish_announcements` sends nothing. The bot needs no privileged gateway intents — it only posts and edits its own messages.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Contributing 👥
 
 Contributions are welcome! To get started:
