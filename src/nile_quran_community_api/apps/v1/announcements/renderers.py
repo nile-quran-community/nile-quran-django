@@ -18,10 +18,7 @@ MENTION_EVERYONE = "@everyone"
 # NOTE: Placeholder Arabic copy, pending the community's own wording.
 TITLE = "المتصدرون لشهر {month} {year}"
 BANNER = "🎊 🎊 🎊 🎊 🎊 🎊 🎊"
-INTRO = """الحمد لله
-مُتِمِّ نعمته وكامل فضله
-والصلاة والسلام على من سار على هديه
-انتهينا من شهر {month}"""
+INTRO = """الحمد لله مُتِمِّ نعمته، والصلاة والسلام على من سار على هديه, انتهينا من شهر {month}."""
 WINNERS_HEADING = "## **إعلان الفائزين**"
 WINNERS_LINE = "- المركز {place}: {names} {points} {medal}"
 HONOURABLE_HEADING = "**ذكر شرفي**"
@@ -29,10 +26,7 @@ HONOURABLE_LINE = "- {names} {points} ✨"
 
 PLACES = {1: "الأول", 2: "الثاني", 3: "الثالث"}
 MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
-# Ranks 1-3 are announced as winners; the rest of what the generator returns is
-# listed under ذكر شرفي.
 WINNING_RANKS = 3
-# Ranks the generator is asked for: three winners plus two honourable mentions.
 RANKS = 5
 
 
