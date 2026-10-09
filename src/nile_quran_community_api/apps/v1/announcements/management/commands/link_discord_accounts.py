@@ -13,7 +13,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 
 from ....users.models import User
-from ....users.services import match_discord_members
+from ....users.utils import match_discord_members
 from ...integrations import discord
 
 

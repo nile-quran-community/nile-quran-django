@@ -2,7 +2,7 @@ import pytest
 from django.contrib.auth.models import Group
 
 from nile_quran_community_api.apps.v1.users.models import User
-from nile_quran_community_api.apps.v1.users.services import (
+from nile_quran_community_api.apps.v1.users.utils import (
     match_discord_members,
     normalize_name,
 )
