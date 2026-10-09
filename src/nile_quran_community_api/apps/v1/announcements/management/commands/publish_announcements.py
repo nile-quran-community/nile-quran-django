@@ -39,7 +39,7 @@ class Command(BaseCommand):
         try:
             delivery.external_id = discord.post_message(
                 channel_id,
-                renderers.announcement_embed(announcement),
+                renderers.announcement_message(announcement),
             )
         except discord.DeliveryError as error:
             delivery.status = AnnouncementDelivery.Status.FAILED

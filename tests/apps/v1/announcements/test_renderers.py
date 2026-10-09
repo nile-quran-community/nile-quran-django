@@ -2,11 +2,12 @@ import datetime as dt
 
 import pytest
 
-from nile_quran_community_api.apps.v1.announcements import renderers
+from nile_quran_community_api.apps.v1.announcements import poetry, renderers
 from nile_quran_community_api.apps.v1.announcements.integrations import discord
 from nile_quran_community_api.apps.v1.announcements.models import Announcement
 
 IN_SHAABAN = dt.date(2026, 2, 1)
+SHAABAN = (1447, 8)
 
 
 def ranked(student, points, rank):
@@ -14,56 +15,132 @@ def ranked(student, points, rank):
     return student
 
 
+@pytest.fixture
+def performer(make_student):
+    def _make(username, points, rank, discord_id=""):
+        student = make_student(username, points, IN_SHAABAN, discord_id=discord_id)
+        return ranked(student, points, rank)
+
+    return _make
+
+
 @pytest.mark.django_db
 class TestTopPerformersContent:
-    def test_mentions_students_who_have_a_discord_id(self, make_student):
-        student = make_student("linked", 5, IN_SHAABAN, discord_id="99")
+    def test_opens_with_a_banner_and_a_verse(self, performer):
+        content = renderers.top_performers_content([performer("a", 5, 1)], *SHAABAN)
 
-        assert "<@99>" in renderers.top_performers_content([ranked(student, 5, 1)])
+        assert content.startswith(renderers.BANNER)
+        assert poetry.for_month(*SHAABAN) in content
 
-    def test_falls_back_to_the_name_without_a_discord_id(self, make_student):
-        student = make_student("unlinked", 5, IN_SHAABAN)
+    def test_greets_the_month_that_ended(self, performer):
+        content = renderers.top_performers_content([performer("a", 5, 1)], *SHAABAN)
 
-        content = renderers.top_performers_content([ranked(student, 5, 1)])
+        assert "انتهينا من شهر شعبان" in content
+
+    def test_counts_down_to_first_place(self, performer):
+        performers = [
+            performer("first", 12, 1),
+            performer("second", 10, 2),
+            performer("third", 9, 3),
+        ]
+
+        content = renderers.top_performers_content(performers, *SHAABAN)
+
+        places = [line for line in content.splitlines() if line.startswith("- المركز")]
+        assert [p.split(":")[0] for p in places] == [
+            "- المركز الثالث",
+            "- المركز الثاني",
+            "- المركز الأول",
+        ]
+
+    def test_lists_ranks_beyond_the_third_as_honourable_mentions(self, performer):
+        performers = [
+            performer("first", 12, 1),
+            performer("second", 10, 2),
+            performer("third", 9, 3),
+            performer("fourth", 7, 4),
+            performer("fifth", 6, 5),
+        ]
+
+        content = renderers.top_performers_content(performers, *SHAABAN)
+
+        assert renderers.HONOURABLE_HEADING in content
+        honourable = content.split(renderers.HONOURABLE_HEADING)[1]
+        assert "ب7 نقاط" in honourable
+        assert "ب6 نقاط" in honourable
+        assert "المركز" not in honourable
+
+    def test_omits_the_honourable_section_when_nobody_qualifies(self, performer):
+        content = renderers.top_performers_content([performer("a", 5, 1)], *SHAABAN)
+
+        assert renderers.HONOURABLE_HEADING not in content
+
+    def test_students_sharing_a_rank_share_a_line(self, performer):
+        performers = [performer("one", 12, 1), performer("two", 12, 1)]
+
+        content = renderers.top_performers_content(performers, *SHAABAN)
+
+        first = [li for li in content.splitlines() if li.startswith("- المركز الأول")]
+        assert len(first) == 1
+        assert " و " in first[0]
+        assert first[0].count("ب12 نقطة") == 1
+
+    def test_mentions_students_who_have_a_discord_id(self, performer):
+        content = renderers.top_performers_content(
+            [performer("linked", 5, 1, discord_id="99")], *SHAABAN
+        )
+
+        assert "<@99>" in content
+
+    def test_falls_back_to_the_name_without_a_discord_id(self, performer):
+        content = renderers.top_performers_content(
+            [performer("unlinked", 5, 1)], *SHAABAN
+        )
 
         assert "<@" not in content
         assert "طالب unlinked" in content
 
-    def test_tied_students_each_get_their_shared_medal(self, make_student):
-        students = [
-            ranked(make_student(name, 5, IN_SHAABAN), 5, 1) for name in ("one", "two")
-        ]
-
-        assert renderers.top_performers_content(students).count("🥇") == 2
-
-    def test_rank_beyond_the_medals_falls_back_to_a_number(self, make_student):
-        student = make_student("fourth", 1, IN_SHAABAN)
-
-        assert "4." in renderers.top_performers_content([ranked(student, 1, 4)])
-
-    def test_points_appear_next_to_each_student(self, make_student):
-        student = make_student("winner", 7, IN_SHAABAN)
-
-        assert "7 نقطة" in renderers.top_performers_content([ranked(student, 7, 1)])
-
     def test_title_carries_the_hijri_month_and_year(self):
-        assert (
-            renderers.top_performers_title("شعبان", 1447) == "المتصدرون لشهر شعبان 1447"
-        )
+        assert renderers.top_performers_title(*SHAABAN) == "المتصدرون لشهر شعبان 1447"
+
+
+class TestArabicPointAgreement:
+    @pytest.mark.parametrize(
+        ("points", "expected"),
+        [
+            (1, "بنقطة واحدة"),
+            (2, "بنقطتين"),
+            (3, "ب3 نقاط"),
+            (9, "ب9 نقاط"),
+            (10, "ب10 نقاط"),
+            (11, "ب11 نقطة"),
+            (12, "ب12 نقطة"),
+        ],
+    )
+    def test_unit_agrees_with_the_number(self, points, expected):
+        assert renderers._points(points) == expected
+
+
+class TestPoetry:
+    def test_the_same_month_always_gets_the_same_verse(self):
+        """A rerun edits the posted message, so the verse must not drift."""
+        assert poetry.for_month(*SHAABAN) == poetry.for_month(*SHAABAN)
+
+    def test_consecutive_months_differ(self):
+        assert poetry.for_month(1447, 8) != poetry.for_month(1447, 9)
 
 
 @pytest.mark.django_db
-class TestAnnouncementEmbed:
-    def test_maps_title_and_content(self):
+class TestAnnouncementMessage:
+    def test_pings_in_content_and_body_in_the_embed(self):
         announcement = Announcement(title="عنوان", content="محتوى")
 
-        assert renderers.announcement_embed(announcement) == {
-            "title": "عنوان",
-            "description": "محتوى",
+        assert renderers.announcement_message(announcement) == {
+            "content": "@everyone",
+            "embed": {"title": "عنوان", "description": "محتوى"},
         }
 
     def test_embed_payload_converts_for_discord(self):
-        """The dict the renderer produces has to satisfy discord.py's Embed."""
         embed = discord._embed({"title": "عنوان", "description": "محتوى"})
 
         assert (embed.title, embed.description) == ("عنوان", "محتوى")

@@ -17,8 +17,19 @@ from django.conf import settings
 # Raised for anything the caller should treat as a delivery failure rather than a bug.
 DeliveryError = (discord.DiscordException, OSError)
 
-type Embed = dict[str, str]
 type Member = dict[str, str]
+
+
+class Embed(t.TypedDict):
+    title: str
+    description: str
+
+
+class Message(t.TypedDict):
+    """A ping in `content` and the body in `embed`: embeds alone notify nobody."""
+
+    content: str
+    embed: Embed
 
 
 def _embed(payload: Embed) -> discord.Embed:
@@ -50,22 +61,25 @@ def _with_channel[T](
     return asyncio.run(_session(resolve))
 
 
-def post_message(channel_id: str, embed: Embed) -> str:
-    """Post an embed to a channel and return the new message's ID."""
+def post_message(channel_id: str, payload: Message) -> str:
+    """Post a message to a channel and return the new message's ID."""
 
     async def send(channel: discord.abc.Messageable) -> str:
-        message = await channel.send(embed=_embed(embed))
+        message = await channel.send(
+            content=payload["content"], embed=_embed(payload["embed"])
+        )
         return str(message.id)
 
     return _with_channel(channel_id, send)
 
 
-def edit_message(channel_id: str, message_id: str, embed: Embed) -> None:
-    """Replace the embed on a message this bot previously posted."""
+def edit_message(channel_id: str, message_id: str, payload: Message) -> None:
+    """Replace the content and embed on a message this bot previously posted."""
 
     async def edit(channel: discord.TextChannel) -> None:
-        # Partial: we already know the ID, so there is nothing to fetch first.
-        await channel.get_partial_message(int(message_id)).edit(embed=_embed(embed))
+        await channel.get_partial_message(int(message_id)).edit(
+            content=payload["content"], embed=_embed(payload["embed"])
+        )
 
     _with_channel(channel_id, edit)
 

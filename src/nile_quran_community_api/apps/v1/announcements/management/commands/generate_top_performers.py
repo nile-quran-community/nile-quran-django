@@ -43,7 +43,7 @@ class Command(BaseCommand):
 
         year, month = hijri.previous_month(today)
         start, end = hijri.month_window(year, month)
-        performers = top_performers(start, end)
+        performers = top_performers(start, end, ranks=renderers.RANKS)
         if not performers:
             self.stdout.write(
                 f"No student earned points in {year}-{month:02d}; skipping."
@@ -51,8 +51,8 @@ class Command(BaseCommand):
             return
 
         reference_key = f"top_performers:{year}-{month:02d}"
-        title = renderers.top_performers_title(hijri.month_name(year, month), year)
-        content = renderers.top_performers_content(performers)
+        title = renderers.top_performers_title(year, month)
+        content = renderers.top_performers_content(performers, year, month)
 
         existing = Announcement.objects.filter(reference_key=reference_key).first()
         if existing is None:
@@ -87,5 +87,5 @@ class Command(BaseCommand):
         discord.edit_message(
             settings.DISCORD_ANNOUNCEMENTS_CHANNEL_ID,
             delivery.external_id,
-            renderers.announcement_embed(announcement),
+            renderers.announcement_message(announcement),
         )

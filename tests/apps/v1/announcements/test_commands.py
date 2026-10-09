@@ -25,17 +25,17 @@ def discord_api(monkeypatch, settings):
     settings.DISCORD_ANNOUNCEMENTS_CHANNEL_ID = "channel-1"
     calls: list[dict] = []
 
-    def post_message(channel_id, embed):
-        calls.append({"action": "post", "channel": channel_id, "embed": embed})
+    def post_message(channel_id, payload):
+        calls.append({"action": "post", "channel": channel_id, "payload": payload})
         return MESSAGE_ID
 
-    def edit_message(channel_id, message_id, embed):
+    def edit_message(channel_id, message_id, payload):
         calls.append(
             {
                 "action": "edit",
                 "channel": channel_id,
                 "message": message_id,
-                "embed": embed,
+                "payload": payload,
             }
         )
 
@@ -131,7 +131,7 @@ class TestGenerateTopPerformers:
 
         assert [call["action"] for call in discord_api] == ["edit"]
         assert discord_api[0]["message"] == MESSAGE_ID
-        assert "20" in discord_api[0]["embed"]["description"]
+        assert "20" in discord_api[0]["payload"]["embed"]["description"]
 
 
 @pytest.mark.django_db
@@ -145,9 +145,9 @@ class TestPublishAnnouncements:
         announcement.refresh_from_db()
         assert [call["action"] for call in discord_api] == ["post"]
         assert discord_api[0]["channel"] == "channel-1"
-        assert discord_api[0]["embed"] == {
-            "title": "إعلان",
-            "description": "نص الإعلان",
+        assert discord_api[0]["payload"] == {
+            "content": "@everyone",
+            "embed": {"title": "إعلان", "description": "نص الإعلان"},
         }
         assert delivery.status == AnnouncementDelivery.Status.SENT
         assert delivery.external_id == MESSAGE_ID

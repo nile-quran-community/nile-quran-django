@@ -1,44 +1,133 @@
 """Turns announcements into the payload Discord receives.
 
-Every announcement type renders through the same embed; only the monthly leaderboard
-has its body generated, and it is generated once and stored on the announcement so the
-row stays a faithful record of what was posted.
+The body goes in an embed, but mentions in an embed render without notifying anyone,
+so the `@everyone` that actually reaches the community lives in the message content.
+Because that notifies everybody, the mentions inside the embed need only read well.
+
+Only the monthly leaderboard has its body generated, and it is generated once and
+stored on the announcement so the row stays a record of what was posted.
 """
 
 from ..users.models import User
-from .integrations.discord import mention
+from . import hijri, poetry
+from .integrations.discord import Embed, Message, mention
 from .models import Announcement
 
+MENTION_EVERYONE = "@everyone"
+
 # NOTE: Placeholder Arabic copy, pending the community's own wording.
-TOP_PERFORMERS_TITLE = "المتصدرون لشهر {month} {year}"
-TOP_PERFORMERS_INTRO = "بارك الله في جهود إخواننا المتصدرين هذا الشهر:"
-TOP_PERFORMERS_LINE = "{rank} {name} — {points} نقطة"
-RANKS = ("🥇", "🥈", "🥉")
+TITLE = "المتصدرون لشهر {month} {year}"
+BANNER = "🎊 🎊 🎊 🎊 🎊 🎊 🎊"
+INTRO = """الحمد لله
+مُتِمِّ نعمته وكامل فضله
+والصلاة والسلام على من سار على هديه
+انتهينا من شهر {month}"""
+WINNERS_HEADING = "## **إعلان الفائزين**"
+WINNERS_LINE = "- المركز {place}: {names} {points} {medal}"
+HONOURABLE_HEADING = "**ذكر شرفي**"
+HONOURABLE_LINE = "- {names} {points} ✨"
+
+PLACES = {1: "الأول", 2: "الثاني", 3: "الثالث"}
+MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
+# Ranks 1-3 are announced as winners; the rest of what the generator returns is
+# listed under ذكر شرفي.
+WINNING_RANKS = 3
+# Ranks the generator is asked for: three winners plus two honourable mentions.
+RANKS = 5
 
 
-def top_performers_title(month_name: str, hijri_year: int) -> str:
-    return TOP_PERFORMERS_TITLE.format(month=month_name, year=hijri_year)
+def top_performers_title(hijri_year: int, hijri_month: int) -> str:
+    return TITLE.format(
+        month=hijri.month_name(hijri_year, hijri_month), year=hijri_year
+    )
 
 
-def _rank_label(rank: int) -> str:
-    """A medal for the top three ranks, a plain number for anything below."""
-    return RANKS[rank - 1] if rank <= len(RANKS) else f"{rank}."
+def _points(points: int) -> str:
+    """Arabic number agreement: نقطتان for two, نقاط for three to ten, نقطة beyond."""
+    if points == 1:
+        return "بنقطة واحدة"
+    if points == 2:
+        return "بنقطتين"
+    return f"ب{points} {'نقاط' if points <= 10 else 'نقطة'}"
 
 
-def top_performers_content(performers: list[User]) -> str:
-    """Render the leaderboard body. Students sharing a rank share a medal."""
-    lines = [
-        TOP_PERFORMERS_LINE.format(
-            rank=_rank_label(student.rank),
-            name=mention(
-                student.discord_id, f"{student.first_name} {student.last_name}"
-            ),
-            points=student.points,
-        )
-        for student in performers
+def _names(students: list[User]) -> str:
+    """Students sharing a rank are listed together on one line."""
+    return " و ".join(
+        mention(student.discord_id, f"{student.first_name} {student.last_name}")
+        for student in students
+    )
+
+
+def _ranked(performers: list[User]) -> dict[int, list[User]]:
+    groups: dict[int, list[User]] = {}
+    for student in performers:
+        groups.setdefault(student.rank, []).append(student)
+    return groups
+
+
+def top_performers_content(
+    performers: list[User],
+    hijri_year: int,
+    hijri_month: int,
+) -> str:
+    """Render the leaderboard body: a verse, the month's greeting, then the ranking."""
+    groups = _ranked(performers)
+    winners = {
+        rank: students for rank, students in groups.items() if rank <= WINNING_RANKS
+    }
+    honourable = {
+        rank: students for rank, students in groups.items() if rank > WINNING_RANKS
+    }
+
+    blocks = [
+        BANNER,
+        poetry.for_month(hijri_year, hijri_month),
+        BANNER,
+        INTRO.format(month=hijri.month_name(hijri_year, hijri_month)),
     ]
-    return "\n".join([TOP_PERFORMERS_INTRO, "", *lines])
+
+    if winners:
+        # Counted down to the first place, so the announcement builds to it.
+        blocks.append(
+            "\n".join(
+                [WINNERS_HEADING]
+                + [
+                    WINNERS_LINE.format(
+                        place=PLACES[rank],
+                        names=_names(winners[rank]),
+                        points=_points(winners[rank][0].points),
+                        medal=MEDALS[rank],
+                    )
+                    for rank in sorted(winners, reverse=True)
+                ]
+            )
+        )
+
+    if honourable:
+        blocks.append(
+            "\n".join(
+                [HONOURABLE_HEADING]
+                + [
+                    HONOURABLE_LINE.format(
+                        names=_names(honourable[rank]),
+                        points=_points(honourable[rank][0].points),
+                    )
+                    for rank in sorted(honourable)
+                ]
+            )
+        )
+
+    return "\n\n".join(blocks)
 
 
-def announcement_embed(announcement: Announcement) -> dict:
+def announcement_embed(announcement: Announcement) -> Embed:
     return {"title": announcement.title, "description": announcement.content}
+
+
+def announcement_message(announcement: Announcement) -> Message:
+    """Ping in the content, body in the embed — an embed on its own notifies nobody."""
+    return {
+        "content": MENTION_EVERYONE,
+        "embed": announcement_embed(announcement),
+    }
