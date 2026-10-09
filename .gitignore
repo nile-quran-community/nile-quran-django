@@ -25,3 +25,6 @@ devenv.local.yaml
 
 # direnv
 .direnv
+
+# mise
+mise.local.toml
