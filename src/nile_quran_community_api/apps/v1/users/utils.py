@@ -12,13 +12,6 @@ _ARABIC_VARIANTS = str.maketrans(
 )
 
 
-def normalize_name(name: str) -> str:
-    """Fold a name so that spelling variants of it compare equal."""
-    folded = unicodedata.normalize("NFKC", name)
-    folded = _ARABIC_NOISE.sub("", folded).translate(_ARABIC_VARIANTS)
-    return " ".join(folded.split()).casefold()
-
-
 @dataclasses.dataclass
 class DiscordMatches:
     """The outcome of matching community members against a Discord server."""
@@ -26,6 +19,13 @@ class DiscordMatches:
     linked: dict[int, str] = dataclasses.field(default_factory=dict)
     unmatched: list[User] = dataclasses.field(default_factory=list)
     ambiguous: list[User] = dataclasses.field(default_factory=list)
+
+
+def normalize_name(name: str) -> str:
+    """Fold a name so that spelling variants of it compare equal."""
+    folded = unicodedata.normalize("NFKC", name)
+    folded = _ARABIC_NOISE.sub("", folded).translate(_ARABIC_VARIANTS)
+    return " ".join(folded.split()).casefold()
 
 
 def match_discord_members(members: list[dict]) -> DiscordMatches:
