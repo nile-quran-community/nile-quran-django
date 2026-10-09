@@ -17,14 +17,19 @@ from django.conf import settings
 # Raised for anything the caller should treat as a delivery failure rather than a bug.
 DeliveryError = (discord.DiscordException, OSError)
 
+type Embed = dict[str, str]
+type Member = dict[str, str]
 
-def _embed(payload: dict) -> discord.Embed:
+
+def _embed(payload: Embed) -> discord.Embed:
     return discord.Embed(title=payload["title"], description=payload["description"])
 
 
-async def _session(action: t.Callable, intents: discord.Intents | None = None) -> t.Any:
+async def _session[T](
+    action: t.Callable[[discord.Client], t.Awaitable[T]],
+    intents: discord.Intents | None = None,
+) -> T:
     """Log in over REST, hand `action` the client, and close cleanly afterwards."""
-
     client = discord.Client(intents=intents or discord.Intents.none())
     await client.login(settings.DISCORD_BOT_TOKEN)
     try:
@@ -33,34 +38,39 @@ async def _session(action: t.Callable, intents: discord.Intents | None = None) -
         await client.close()
 
 
-def _with_channel(channel_id: str, action: t.Callable) -> t.Any:
-    async def resolve(client):
+def _with_channel[T](
+    channel_id: str,
+    action: t.Callable[[t.Any], t.Awaitable[T]],
+) -> T:
+    """Run `action` against the channel, which Discord types loosely on the way back."""
+
+    async def resolve(client: discord.Client) -> T:
         return await action(await client.fetch_channel(int(channel_id)))
 
     return asyncio.run(_session(resolve))
 
 
-def post_message(channel_id: str, embed: dict) -> str:
+def post_message(channel_id: str, embed: Embed) -> str:
     """Post an embed to a channel and return the new message's ID."""
 
-    async def send(channel):
+    async def send(channel: discord.abc.Messageable) -> str:
         message = await channel.send(embed=_embed(embed))
         return str(message.id)
 
     return _with_channel(channel_id, send)
 
 
-def edit_message(channel_id: str, message_id: str, embed: dict) -> None:
+def edit_message(channel_id: str, message_id: str, embed: Embed) -> None:
     """Replace the embed on a message this bot previously posted."""
 
-    async def edit(channel):
+    async def edit(channel: discord.TextChannel) -> None:
         # Partial: we already know the ID, so there is nothing to fetch first.
         await channel.get_partial_message(int(message_id)).edit(embed=_embed(embed))
 
     _with_channel(channel_id, edit)
 
 
-def list_members(guild_id: str) -> list[dict]:
+def list_members(guild_id: str) -> list[Member]:
     """Every human member of the server, by the name the server shows for them.
 
     `display_name` is their nickname on this server when they have set one, and their
@@ -72,7 +82,7 @@ def list_members(guild_id: str) -> list[dict]:
     intents = discord.Intents.none()
     intents.members = True
 
-    async def fetch(client):
+    async def fetch(client: discord.Client) -> list[Member]:
         guild = await client.fetch_guild(int(guild_id))
         return [
             {"id": str(member.id), "name": member.display_name}
@@ -85,5 +95,4 @@ def list_members(guild_id: str) -> list[dict]:
 
 def mention(discord_id: str, fallback: str) -> str:
     """Render a user as a Discord mention, or as plain text when we have no ID."""
-
     return f"<@{discord_id}>" if discord_id else fallback
