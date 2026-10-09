@@ -27,6 +27,17 @@ class Command(BaseCommand):
             help="Report what would be linked without saving anything.",
         )
 
+    def report(self, matches, dry_run: bool) -> None:
+        verb = "Would link" if dry_run else "Linked"
+        self.stdout.write(f"{verb} {len(matches.linked)} user(s).")
+
+        for label, users in (
+            ("No Discord member found for", matches.unmatched),
+            ("Several possible matches for", matches.ambiguous),
+        ):
+            for user in users:
+                self.stdout.write(f"  {label} {user.username}.")
+
     def handle(self, *args, **options) -> None:
         if not settings.DISCORD_BOT_TOKEN or not settings.DISCORD_GUILD_ID:
             raise CommandError("DISCORD_BOT_TOKEN and DISCORD_GUILD_ID are required.")
@@ -40,14 +51,3 @@ class Command(BaseCommand):
             User.objects.bulk_update(users, ["discord_id"])
 
         self.report(matches, options["dry_run"])
-
-    def report(self, matches, dry_run: bool) -> None:
-        verb = "Would link" if dry_run else "Linked"
-        self.stdout.write(f"{verb} {len(matches.linked)} user(s).")
-
-        for label, users in (
-            ("No Discord member found for", matches.unmatched),
-            ("Several possible matches for", matches.ambiguous),
-        ):
-            for user in users:
-                self.stdout.write(f"  {label} {user.username}.")

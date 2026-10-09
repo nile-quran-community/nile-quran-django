@@ -18,15 +18,6 @@ from ...models import Announcement, AnnouncementDelivery
 class Command(BaseCommand):
     help = "Post due announcements to Discord."
 
-    def handle(self, *args, **options) -> None:
-        channel_id = settings.DISCORD_ANNOUNCEMENTS_CHANNEL_ID
-        if not channel_id or not settings.DISCORD_BOT_TOKEN:
-            self.stderr.write("Discord is not configured; nothing was sent.")
-            return
-
-        for announcement in self.due():
-            self.deliver(announcement, channel_id)
-
     def due(self) -> QuerySet[Announcement]:
         """Announcements past their publish time that Discord has not received."""
         return (
@@ -47,7 +38,8 @@ class Command(BaseCommand):
 
         try:
             delivery.external_id = discord.post_message(
-                channel_id, renderers.announcement_embed(announcement)
+                channel_id,
+                renderers.announcement_embed(announcement),
             )
         except discord.DeliveryError as error:
             delivery.status = AnnouncementDelivery.Status.FAILED
@@ -64,3 +56,12 @@ class Command(BaseCommand):
         announcement.status = Announcement.Status.PUBLISHED
         announcement.save(update_fields=["status", "updated_at"])
         self.stdout.write(f"Announcement {announcement.pk} sent.")
+
+    def handle(self, *args, **options) -> None:
+        channel_id = settings.DISCORD_ANNOUNCEMENTS_CHANNEL_ID
+        if not channel_id or not settings.DISCORD_BOT_TOKEN:
+            self.stderr.write("Discord is not configured; nothing was sent.")
+            return
+
+        for announcement in self.due():
+            self.deliver(announcement, channel_id)
