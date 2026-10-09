@@ -37,7 +37,7 @@ class TestTopPerformersContent:
 
         assert "انتهينا من شهر شعبان" in content
 
-    def test_counts_down_to_first_place(self, performer):
+    def test_lists_winners_from_first_place_down(self, performer):
         performers = [
             performer("first", 12, 1),
             performer("second", 10, 2),
@@ -48,9 +48,9 @@ class TestTopPerformersContent:
 
         places = [line for line in content.splitlines() if line.startswith("- المركز")]
         assert [p.split(":")[0] for p in places] == [
-            "- المركز الثالث",
-            "- المركز الثاني",
             "- المركز الأول",
+            "- المركز الثاني",
+            "- المركز الثالث",
         ]
 
     def test_lists_ranks_beyond_the_third_as_honourable_mentions(self, performer):

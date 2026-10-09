@@ -88,7 +88,6 @@ def top_performers_content(
     ]
 
     if winners:
-        # Counted down to the first place, so the announcement builds to it.
         blocks.append(
             "\n".join(
                 [WINNERS_HEADING]
@@ -99,7 +98,7 @@ def top_performers_content(
                         points=_points(winners[rank][0].points),
                         medal=MEDALS[rank],
                     )
-                    for rank in sorted(winners, reverse=True)
+                    for rank in sorted(winners)
                 ]
             )
         )
