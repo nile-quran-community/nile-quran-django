@@ -132,6 +132,51 @@ class TestGenerateTopPerformers:
         assert discord_api[0]["message"] == MESSAGE_ID
         assert "20" in discord_api[0]["payload"]["embed"]["description"]
 
+    def test_a_deleted_message_is_reposted_rather_than_edited(
+        self, make_student, discord_api, monkeypatch
+    ):
+        make_student("winner", 10, IN_SHAABAN)
+        call_command("generate_top_performers", f"--date={RAMADAN_START}")
+        call_command("publish_announcements")
+        announcement = Announcement.objects.get(idempotency_key=SHAABAN_KEY)
+        discord_api.clear()
+
+        recording = discord.edit_message
+
+        def deleted(*args, **kwargs):
+            raise discord.MessageNotFound(MESSAGE_ID)
+
+        monkeypatch.setattr(discord, "edit_message", deleted)
+        call_command("generate_top_performers", f"--date={RAMADAN_START}")
+
+        assert not announcement.deliveries.exists()
+
+        monkeypatch.setattr(discord, "edit_message", recording)
+        call_command("publish_announcements")
+
+        assert [call["action"] for call in discord_api] == ["post"]
+        assert announcement.deliveries.get().status == AnnouncementDelivery.Status.SENT
+
+    def test_a_missing_channel_leaves_the_delivery_alone(
+        self, make_student, discord_api, monkeypatch
+    ):
+        """A 404 for the channel must not discard the ID of a message that still exists."""
+
+        make_student("winner", 10, IN_SHAABAN)
+        call_command("generate_top_performers", f"--date={RAMADAN_START}")
+        call_command("publish_announcements")
+        announcement = Announcement.objects.get(idempotency_key=SHAABAN_KEY)
+
+        def channel_gone(*args, **kwargs):
+            raise discord_py.DiscordException("unknown channel")
+
+        monkeypatch.setattr(discord, "edit_message", channel_gone)
+
+        with pytest.raises(discord_py.DiscordException):
+            call_command("generate_top_performers", f"--date={RAMADAN_START}")
+
+        assert announcement.deliveries.get().external_id == MESSAGE_ID
+
 
 @pytest.mark.django_db
 class TestPublishAnnouncements:

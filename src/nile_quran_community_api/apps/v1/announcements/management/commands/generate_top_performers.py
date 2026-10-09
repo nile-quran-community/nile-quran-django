@@ -85,8 +85,14 @@ class Command(BaseCommand):
         if not settings.DISCORD_ANNOUNCEMENTS_CHANNEL_ID:
             raise CommandError("DISCORD_ANNOUNCEMENTS_CHANNEL_ID is not configured.")
 
-        discord.edit_message(
-            settings.DISCORD_ANNOUNCEMENTS_CHANNEL_ID,
-            delivery.external_id,
-            renderers.announcement_message(announcement),
-        )
+        try:
+            discord.edit_message(
+                settings.DISCORD_ANNOUNCEMENTS_CHANNEL_ID,
+                delivery.external_id,
+                renderers.announcement_message(announcement),
+            )
+        except discord.MessageNotFound:
+            # Someone removed the post. Dropping the delivery leaves the announcement
+            # with nothing sent, so publish_announcements posts a replacement.
+            delivery.delete()
+            self.stdout.write("Discord message is gone; queued a replacement.")

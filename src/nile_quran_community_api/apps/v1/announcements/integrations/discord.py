@@ -17,6 +17,15 @@ from django.conf import settings
 # Raised for anything the caller should treat as a delivery failure rather than a bug.
 DeliveryError = (discord.DiscordException, OSError)
 
+# Discord's code for "Unknown Message". A 404 on its own is not enough to go on: a
+# missing channel answers 404 too, and that one leaves the message itself intact.
+_UNKNOWN_MESSAGE = 10008
+
+
+class MessageNotFound(Exception):
+    """The message we hold an ID for is no longer in the channel."""
+
+
 type Member = dict[str, str]
 
 
@@ -78,9 +87,14 @@ def edit_message(channel_id: str, message_id: str, payload: Message) -> None:
     """Replace the content and embed on a message this bot previously posted."""
 
     async def edit(channel: discord.TextChannel) -> None:
-        await channel.get_partial_message(int(message_id)).edit(
-            content=payload["content"], embed=_embed(payload["embed"])
-        )
+        try:
+            await channel.get_partial_message(int(message_id)).edit(
+                content=payload["content"], embed=_embed(payload["embed"])
+            )
+        except discord.NotFound as error:
+            if error.code != _UNKNOWN_MESSAGE:
+                raise
+            raise MessageNotFound(message_id) from error
 
     _with_channel(channel_id, edit)
 
