@@ -20,7 +20,7 @@ MENTION_EVERYONE = "@everyone"
 # NOTE: Placeholder Arabic copy, pending the community's own wording.
 TITLE = "المتصدرون لشهر {month} {year}"
 BANNER = "🎊 🎊 🎊 🎊 🎊 🎊 🎊"
-INTRO = """الحمد لله مُتِمِّ نعمته، والصلاة والسلام على من سار على هديه, انتهينا من شهر {month}."""
+INTRO = """الحمد لله مُتِمِّ نعمته، والصلاة والسلام على من سار على هديه، انتهينا من شهر {month}."""
 WINNERS_HEADING = "## **إعلان الفائزين**"
 WINNERS_LINE = "- المركز {place}: {names} {points} {medal}"
 HONOURABLE_HEADING = "**ذكر شرفي**"
