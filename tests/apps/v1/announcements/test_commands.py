@@ -12,7 +12,7 @@ from nile_quran_community_api.apps.v1.announcements.models import (
 
 RAMADAN_START = "2026-02-18"  # 1 Ramadan 1447; the month that just ended is Sha'ban.
 IN_SHAABAN = dt.date(2026, 2, 1)
-SHAABAN_KEY = "top_performers:1447-08"
+SHAABAN_KEY = f"{Announcement.Type.MONTH_TOP_PERFORMERS.value}:1447-08"
 
 
 MESSAGE_ID = "discord-message-1"
@@ -61,7 +61,6 @@ def due_announcement(**overrides) -> Announcement:
             "type": Announcement.Type.GENERAL,
             "title": "إعلان",
             "content": "نص الإعلان",
-            "status": Announcement.Status.SCHEDULED,
             "publish_at": dt.datetime(2020, 1, 1, tzinfo=dt.UTC),
             **overrides,
         }
@@ -70,16 +69,14 @@ def due_announcement(**overrides) -> Announcement:
 
 @pytest.mark.django_db
 class TestGenerateTopPerformers:
-    def test_creates_a_scheduled_announcement_for_the_previous_month(
-        self, make_student
-    ):
+    def test_queues_an_announcement_for_the_previous_month(self, make_student):
         make_student("winner", 10, IN_SHAABAN)
 
         call_command("generate_top_performers", f"--date={RAMADAN_START}")
 
         announcement = Announcement.objects.get(reference_key=SHAABAN_KEY)
         assert announcement.type == Announcement.Type.MONTH_TOP_PERFORMERS
-        assert announcement.status == Announcement.Status.SCHEDULED
+        assert announcement.status == Announcement.Status.PENDING
         assert announcement.publish_at is not None
         assert "رمضان" not in announcement.title
         assert "شعبان" in announcement.title
@@ -163,21 +160,6 @@ class TestPublishAnnouncements:
 
         assert discord_api == []
 
-    def test_a_manually_published_announcement_is_still_delivered(self, discord_api):
-        """status is admin-editable, so delivery must not depend on it."""
-        due_announcement(status=Announcement.Status.PUBLISHED)
-
-        call_command("publish_announcements")
-
-        assert [call["action"] for call in discord_api] == ["post"]
-
-    def test_skips_drafts(self, discord_api):
-        due_announcement(status=Announcement.Status.DRAFT)
-
-        call_command("publish_announcements")
-
-        assert discord_api == []
-
     def test_skips_announcements_not_yet_due(self, discord_api):
         due_announcement(publish_at=dt.datetime(2099, 1, 1, tzinfo=dt.UTC))
 
@@ -185,7 +167,9 @@ class TestPublishAnnouncements:
 
         assert discord_api == []
 
-    def test_skips_announcements_without_a_publish_time(self, discord_api):
+    def test_skips_drafts_which_are_announcements_without_a_publish_time(
+        self, discord_api
+    ):
         due_announcement(publish_at=None)
 
         call_command("publish_announcements")

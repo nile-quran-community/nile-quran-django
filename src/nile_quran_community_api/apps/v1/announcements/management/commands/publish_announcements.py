@@ -1,8 +1,8 @@
 """Delivers every announcement that is due and not yet in Discord.
 
-Selection is driven by delivery records rather than `Announcement.status`, which stays
-editable by admins: whatever status someone types, an announcement is sent exactly once
-and a failed send is simply retried on the next run.
+An announcement is due once `publish_at` has passed; a null `publish_at` is a draft and
+never matches. Delivery records decide what has already gone out, so an announcement is
+sent exactly once and a failed send is retried on the next run.
 """
 
 from django.conf import settings
@@ -20,13 +20,9 @@ class Command(BaseCommand):
 
     def due(self) -> QuerySet[Announcement]:
         """Announcements past their publish time that Discord has not received."""
-        return (
-            Announcement.objects.filter(publish_at__lte=timezone.now())
-            .exclude(status=Announcement.Status.DRAFT)
-            .exclude(
-                deliveries__channel=AnnouncementDelivery.Channel.DISCORD,
-                deliveries__status=AnnouncementDelivery.Status.SENT,
-            )
+        return Announcement.objects.filter(publish_at__lte=timezone.now()).exclude(
+            deliveries__channel=AnnouncementDelivery.Channel.DISCORD,
+            deliveries__status=AnnouncementDelivery.Status.SENT,
         )
 
     def deliver(self, announcement: Announcement, channel_id: str) -> None:
@@ -52,9 +48,6 @@ class Command(BaseCommand):
         delivery.delivered_at = timezone.now()
         delivery.last_error = ""
         delivery.save()
-
-        announcement.status = Announcement.Status.PUBLISHED
-        announcement.save(update_fields=["status", "updated_at"])
         self.stdout.write(f"Announcement {announcement.pk} sent.")
 
     def handle(self, *args, **options) -> None:

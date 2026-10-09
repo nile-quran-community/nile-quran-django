@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 
@@ -21,15 +22,17 @@ class Announcement(models.Model):
         MONTH_TOP_PERFORMERS = "month_top_performers", _("Month Top Performers")
 
     class Status(models.TextChoices):
+        """Derived, never stored — see `Announcement.status`."""
+
         DRAFT = "draft", _("Draft")
         SCHEDULED = "scheduled", _("Scheduled")
+        PENDING = "pending", _("Pending")
         PUBLISHED = "published", _("Published")
-        ARCHIVED = "archived", _("Archived")
+        FAILED = "failed", _("Failed")
 
     type = models.CharField(max_length=32, choices=Type)
     title = models.CharField(max_length=255)
     content = models.TextField()
-    status = models.CharField(max_length=16, choices=Status, default=Status.DRAFT)
     publish_at = models.DateTimeField(blank=True, null=True)
     reference_key = models.CharField(max_length=64, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -40,6 +43,26 @@ class Announcement(models.Model):
         null=True,
         on_delete=models.SET_NULL,
     )
+
+    @property
+    def status(self) -> "Announcement.Status":
+        """Where this announcement stands, worked out from when it is due and whether
+        Discord has it.
+
+        Not a stored column: a stored one can disagree with the delivery records, and
+        an admin setting it to published by hand would silently stop the post going
+        out. Reads `deliveries.all()` so a prefetch covers a whole list.
+        """
+        deliveries = self.deliveries.all()
+        if any(d.status == AnnouncementDelivery.Status.SENT for d in deliveries):
+            return self.Status.PUBLISHED
+        if self.publish_at is None:
+            return self.Status.DRAFT
+        if self.publish_at > timezone.now():
+            return self.Status.SCHEDULED
+        if any(d.status == AnnouncementDelivery.Status.FAILED for d in deliveries):
+            return self.Status.FAILED
+        return self.Status.PENDING
 
 
 class AnnouncementDelivery(models.Model):

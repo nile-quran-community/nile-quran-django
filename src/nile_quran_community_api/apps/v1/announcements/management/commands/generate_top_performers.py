@@ -50,7 +50,9 @@ class Command(BaseCommand):
             )
             return
 
-        reference_key = f"top_performers:{year}-{month:02d}"
+        reference_key = (
+            f"{Announcement.Type.MONTH_TOP_PERFORMERS.value}:{year}-{month:02d}"
+        )
         title = renderers.top_performers_title(year, month)
         content = renderers.top_performers_content(performers, year, month)
 
@@ -60,7 +62,6 @@ class Command(BaseCommand):
                 type=Announcement.Type.MONTH_TOP_PERFORMERS,
                 title=title,
                 content=content,
-                status=Announcement.Status.SCHEDULED,
                 publish_at=timezone.now(),
                 reference_key=reference_key,
             )

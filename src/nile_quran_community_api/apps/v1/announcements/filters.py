@@ -16,7 +16,6 @@ class AnnouncementFilterSet(django_filters.FilterSet):
     created = django_filters.DateFromToRangeFilter(field_name="created_at")
     updated = django_filters.DateFromToRangeFilter(field_name="updated_at")
     type = django_filters.ChoiceFilter(field_name="type")
-    status = django_filters.ChoiceFilter(field_name="status")
     in_title = django_filters.CharFilter(
         field_name="title",
         lookup_expr="icontains",
