@@ -26,6 +26,7 @@ def category(db) -> Category:
 @pytest.fixture
 def make_student(db, category: Category):
     """Build an active student holding `points` points inside the given month."""
+
     students = Group.objects.get(name="Student")
 
     def _make(username: str, points: int, date: dt.date, discord_id: str = "") -> User:

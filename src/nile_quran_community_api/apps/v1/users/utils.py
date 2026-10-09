@@ -23,6 +23,7 @@ class DiscordMatches:
 
 def normalize_name(name: str) -> str:
     """Fold a name so that spelling variants of it compare equal."""
+
     folded = unicodedata.normalize("NFKC", name)
     folded = _ARABIC_NOISE.sub("", folded).translate(_ARABIC_VARIANTS)
     return " ".join(folded.split()).casefold()
@@ -36,6 +37,7 @@ def match_discord_members(members: list[dict]) -> DiscordMatches:
     later message, the wrong person, so anything uncertain is reported rather than
     guessed at.
     """
+
     by_name: dict[str, set[str]] = {}
     for member in members:
         by_name.setdefault(normalize_name(member["name"]), set()).add(member["id"])

@@ -41,6 +41,7 @@ async def _session[T](
     intents: discord.Intents | None = None,
 ) -> T:
     """Log in over REST, hand `action` the client, and close cleanly afterwards."""
+
     client = discord.Client(intents=intents or discord.Intents.none())
     await client.login(settings.DISCORD_BOT_TOKEN)
     try:
@@ -93,6 +94,7 @@ def list_members(guild_id: str) -> list[Member]:
     `fetch_members` is the HTTP route, so this still needs no gateway, but it does
     require the Server Members intent to be enabled for the bot.
     """
+
     intents = discord.Intents.none()
     intents.members = True
 
@@ -109,4 +111,5 @@ def list_members(guild_id: str) -> list[Member]:
 
 def mention(discord_id: str, fallback: str) -> str:
     """Render a user as a Discord mention, or as plain text when we have no ID."""
+
     return f"<@{discord_id}>" if discord_id else fallback

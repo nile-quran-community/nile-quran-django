@@ -21,6 +21,7 @@ MESSAGE_ID = "discord-message-1"
 @pytest.fixture
 def discord_api(monkeypatch, settings):
     """Record calls instead of reaching Discord."""
+
     settings.DISCORD_BOT_TOKEN = "test-token"
     settings.DISCORD_ANNOUNCEMENTS_CHANNEL_ID = "channel-1"
     calls: list[dict] = []
@@ -46,6 +47,7 @@ def discord_api(monkeypatch, settings):
 
 def break_discord(monkeypatch):
     """Make sending fail the way a Discord outage would; returns a repair callable."""
+
     recording = discord.post_message
 
     def fail(*args, **kwargs):

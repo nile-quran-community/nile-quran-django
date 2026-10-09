@@ -52,9 +52,7 @@ class Command(BaseCommand):
             )
             return
 
-        idempotency_key = (
-            f"{Announcement.Type.MONTH_TOP_PERFORMERS.value}:{year}-{month:02d}"
-        )
+        idempotency_key = f"{Announcement.Type.MONTH_TOP_PERFORMERS}:{year}-{month:02d}"
         title = renderers.top_performers_title(year, month)
         content = renderers.top_performers_content(performers, year, month)
 

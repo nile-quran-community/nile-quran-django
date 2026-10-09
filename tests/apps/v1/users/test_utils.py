@@ -10,6 +10,7 @@ from nile_quran_community_api.apps.v1.users.utils import (
 
 def member(discord_id: str, name: str) -> dict:
     """A server member as `list_members` reports them: one ID, one display name."""
+
     return {"id": discord_id, "name": name}
 
 
@@ -63,6 +64,7 @@ class TestMatchDiscordMembers:
 
     def test_matches_a_server_nickname(self, make_user):
         """display_name is the server nickname when one is set."""
+
         user = make_user("ahmed", "أحمد", "علي")
 
         matches = match_discord_members(

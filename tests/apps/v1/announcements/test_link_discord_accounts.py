@@ -29,6 +29,7 @@ def make_user(db):
 @pytest.fixture
 def server_members(monkeypatch, settings):
     """Stand in for the Discord server's member list."""
+
     settings.DISCORD_BOT_TOKEN = "test-token"
     settings.DISCORD_GUILD_ID = "guild-1"
     members: list[dict] = []

@@ -38,6 +38,7 @@ def top_performers_title(hijri_year: int, hijri_month: int) -> str:
 
 def _points(points: int) -> str:
     """Arabic number agreement: نقطتان for two, نقاط for three to ten, نقطة beyond."""
+
     if points == 1:
         return "بنقطة واحدة"
     if points == 2:
@@ -47,6 +48,7 @@ def _points(points: int) -> str:
 
 def _names(students: list[User]) -> str:
     """Students sharing a rank are listed together on one line."""
+
     return " و ".join(
         mention(student.discord_id, f"{student.first_name} {student.last_name}")
         for student in students
@@ -66,6 +68,7 @@ def top_performers_content(
     hijri_month: int,
 ) -> str:
     """Render the leaderboard body: a verse, the month's greeting, then the ranking."""
+
     groups = _ranked(performers)
     winning = settings.ANNOUNCEMENTS_WINNING_RANKS
     winners = {rank: students for rank, students in groups.items() if rank <= winning}
@@ -117,6 +120,7 @@ def announcement_embed(announcement: Announcement) -> Embed:
 
 def announcement_message(announcement: Announcement) -> Message:
     """Ping in the content, body in the embed — an embed on its own notifies nobody."""
+
     return {
         "content": MENTION_EVERYONE,
         "embed": announcement_embed(announcement),

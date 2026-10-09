@@ -51,6 +51,7 @@ class Announcement(models.Model):
         an admin setting it to published by hand would silently stop the post going
         out. Reads `deliveries.all()` so a prefetch covers a whole list.
         """
+
         deliveries = self.deliveries.all()
         if any(d.status == AnnouncementDelivery.Status.SENT for d in deliveries):
             return self.Status.PUBLISHED

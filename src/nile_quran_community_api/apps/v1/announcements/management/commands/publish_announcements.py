@@ -20,6 +20,7 @@ class Command(BaseCommand):
 
     def due(self) -> QuerySet[Announcement]:
         """Announcements past their publish time that Discord has not received."""
+
         return Announcement.objects.filter(publish_at__lte=timezone.now()).exclude(
             deliveries__channel=AnnouncementDelivery.Channel.DISCORD,
             deliveries__status=AnnouncementDelivery.Status.SENT,

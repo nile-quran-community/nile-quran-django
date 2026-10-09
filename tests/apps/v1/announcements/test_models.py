@@ -75,6 +75,7 @@ class TestAnnouncementStatus:
 
     def test_delivery_wins_over_the_publish_time(self):
         """Backdating publish_at cannot un-send something Discord already has."""
+
         future = announcement(publish_at=timezone.now() + dt.timedelta(days=1))
         delivery(future, AnnouncementDelivery.Status.SENT)
 

@@ -135,6 +135,7 @@ class TestArabicPointAgreement:
 class TestPoetry:
     def test_the_same_month_always_gets_the_same_verse(self):
         """A rerun edits the posted message, so the verse must not drift."""
+
         assert poetry.for_month(*SHAABAN) == poetry.for_month(*SHAABAN)
 
     def test_consecutive_months_differ(self):

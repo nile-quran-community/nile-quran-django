@@ -33,4 +33,5 @@ VERSES: tuple[str, ...] = (
 
 def for_month(hijri_year: int, hijri_month: int) -> str:
     """The verse for a given Hijri month. Same month, same verse, every time."""
+
     return VERSES[(hijri_year * 12 + hijri_month) % len(VERSES)]

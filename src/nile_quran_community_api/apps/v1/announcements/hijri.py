@@ -21,6 +21,7 @@ def _zone() -> ZoneInfo:
 
 def today() -> dt.date:
     """The current date as the community experiences it."""
+
     return timezone.now().astimezone(_zone()).date()
 
 
@@ -34,6 +35,7 @@ def is_month_start(date: dt.date) -> bool:
 
 def previous_month(date: dt.date) -> tuple[int, int]:
     """The (year, month) of the Hijri month before the one `date` falls in."""
+
     hijri = to_hijri(date)
     if hijri.month == 1:
         return hijri.year - 1, 12

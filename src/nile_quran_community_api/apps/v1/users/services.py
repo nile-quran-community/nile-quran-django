@@ -12,6 +12,7 @@ def students_with_points(activities: QuerySet[Activity]) -> list[User]:
     `scored_activities` holds that student's slice of `activities`. Runs in a fixed
     number of queries regardless of how many students there are.
     """
+
     points: dict[int, int] = {
         row["user"]: row["points"]
         for row in activities.values("user").annotate(
