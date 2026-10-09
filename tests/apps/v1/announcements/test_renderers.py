@@ -70,6 +70,17 @@ class TestTopPerformersContent:
         assert "ب6 نقاط" in honourable
         assert "المركز" not in honourable
 
+    def test_winning_rank_count_comes_from_settings(self, performer, settings):
+        settings.ANNOUNCEMENTS_WINNING_RANKS = 1
+        performers = [performer("first", 12, 1), performer("second", 10, 2)]
+
+        content = renderers.top_performers_content(performers, *SHAABAN)
+
+        winners, honourable = content.split(renderers.HONOURABLE_HEADING)
+        assert "المركز الأول" in winners
+        assert "المركز الثاني" not in winners
+        assert "ب10 نقاط" in honourable
+
     def test_omits_the_honourable_section_when_nobody_qualifies(self, performer):
         content = renderers.top_performers_content([performer("a", 5, 1)], *SHAABAN)
 

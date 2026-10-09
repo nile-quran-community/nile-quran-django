@@ -8,6 +8,8 @@ Only the monthly leaderboard has its body generated, and it is generated once an
 stored on the announcement so the row stays a record of what was posted.
 """
 
+from django.conf import settings
+
 from ..users.models import User
 from . import hijri, poetry
 from .integrations.discord import Embed, Message, mention
@@ -26,8 +28,6 @@ HONOURABLE_LINE = "- {names} {points} ✨"
 
 PLACES = {1: "الأول", 2: "الثاني", 3: "الثالث"}
 MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
-WINNING_RANKS = 3
-RANKS = 5
 
 
 def top_performers_title(hijri_year: int, hijri_month: int) -> str:
@@ -67,12 +67,9 @@ def top_performers_content(
 ) -> str:
     """Render the leaderboard body: a verse, the month's greeting, then the ranking."""
     groups = _ranked(performers)
-    winners = {
-        rank: students for rank, students in groups.items() if rank <= WINNING_RANKS
-    }
-    honourable = {
-        rank: students for rank, students in groups.items() if rank > WINNING_RANKS
-    }
+    winning = settings.ANNOUNCEMENTS_WINNING_RANKS
+    winners = {rank: students for rank, students in groups.items() if rank <= winning}
+    honourable = {rank: students for rank, students in groups.items() if rank > winning}
 
     blocks = [
         BANNER,

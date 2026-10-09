@@ -74,7 +74,7 @@ class TestGenerateTopPerformers:
 
         call_command("generate_top_performers", f"--date={RAMADAN_START}")
 
-        announcement = Announcement.objects.get(reference_key=SHAABAN_KEY)
+        announcement = Announcement.objects.get(idempotency_key=SHAABAN_KEY)
         assert announcement.type == Announcement.Type.MONTH_TOP_PERFORMERS
         assert announcement.status == Announcement.Status.PENDING
         assert announcement.publish_at is not None
@@ -95,7 +95,7 @@ class TestGenerateTopPerformers:
         # Mid-Ramadan, so the month that just ended is still Sha'ban.
         call_command("generate_top_performers", "--date=2026-02-20", "--force")
 
-        assert Announcement.objects.filter(reference_key=SHAABAN_KEY).exists()
+        assert Announcement.objects.filter(idempotency_key=SHAABAN_KEY).exists()
 
     def test_skips_when_no_student_earned_points(self, make_student):
         make_student("idle", 0, IN_SHAABAN)
@@ -113,7 +113,7 @@ class TestGenerateTopPerformers:
 
         call_command("generate_top_performers", f"--date={RAMADAN_START}")
 
-        announcement = Announcement.objects.get(reference_key=SHAABAN_KEY)
+        announcement = Announcement.objects.get(idempotency_key=SHAABAN_KEY)
         assert Announcement.objects.count() == 1
         assert "20" in announcement.content
 

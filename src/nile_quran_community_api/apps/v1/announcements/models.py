@@ -8,9 +8,9 @@ class Announcement(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=("reference_key",),
-                condition=~models.Q(reference_key=""),
-                name="unique_announcement_reference_key",
+                fields=("idempotency_key",),
+                condition=~models.Q(idempotency_key=""),
+                name="unique_announcement_idempotency_key",
             ),
         ]
 
@@ -22,8 +22,6 @@ class Announcement(models.Model):
         MONTH_TOP_PERFORMERS = "month_top_performers", _("Month Top Performers")
 
     class Status(models.TextChoices):
-        """Derived, never stored — see `Announcement.status`."""
-
         DRAFT = "draft", _("Draft")
         SCHEDULED = "scheduled", _("Scheduled")
         PENDING = "pending", _("Pending")
@@ -34,7 +32,7 @@ class Announcement(models.Model):
     title = models.CharField(max_length=255)
     content = models.TextField()
     publish_at = models.DateTimeField(blank=True, null=True)
-    reference_key = models.CharField(max_length=64, blank=True, db_index=True)
+    idempotency_key = models.CharField(max_length=64, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(

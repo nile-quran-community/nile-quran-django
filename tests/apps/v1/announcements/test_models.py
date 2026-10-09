@@ -23,17 +23,17 @@ def announcement(**overrides) -> Announcement:
 
 @pytest.mark.django_db
 class TestAnnouncementReferenceKey:
-    def test_the_same_reference_key_cannot_be_used_twice(self):
-        announcement(reference_key="top_performers:1447-08")
+    def test_the_same_idempotency_key_cannot_be_used_twice(self):
+        announcement(idempotency_key="top_performers:1447-08")
 
         with pytest.raises(IntegrityError), transaction.atomic():
-            announcement(reference_key="top_performers:1447-08")
+            announcement(idempotency_key="top_performers:1447-08")
 
-    def test_announcements_without_a_reference_key_are_unconstrained(self):
+    def test_announcements_without_a_idempotency_key_are_unconstrained(self):
         announcement(type=Announcement.Type.GENERAL)
         announcement(type=Announcement.Type.GENERAL)
 
-        assert Announcement.objects.filter(reference_key="").count() == 2
+        assert Announcement.objects.filter(idempotency_key="").count() == 2
 
 
 def delivery(announcement: Announcement, status: str) -> AnnouncementDelivery:

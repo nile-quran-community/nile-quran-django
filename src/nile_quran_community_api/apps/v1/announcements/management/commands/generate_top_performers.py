@@ -2,7 +2,7 @@
 
 Scheduled daily rather than monthly: it exits immediately unless today is the first of a
 Hijri month, which means a day the cluster was unavailable is picked up on the next run.
-Reruns are safe — `reference_key` identifies the month, so a second run updates the
+Reruns are safe — `idempotency_key` identifies the month, so a second run updates the
 existing announcement and edits the message already in Discord instead of posting again.
 """
 
@@ -43,35 +43,37 @@ class Command(BaseCommand):
 
         year, month = hijri.previous_month(today)
         start, end = hijri.month_window(year, month)
-        performers = top_performers(start, end, ranks=renderers.RANKS)
+        performers = top_performers(
+            start, end, ranks=settings.ANNOUNCEMENTS_TOTAL_RANKS
+        )
         if not performers:
             self.stdout.write(
                 f"No student earned points in {year}-{month:02d}; skipping."
             )
             return
 
-        reference_key = (
+        idempotency_key = (
             f"{Announcement.Type.MONTH_TOP_PERFORMERS.value}:{year}-{month:02d}"
         )
         title = renderers.top_performers_title(year, month)
         content = renderers.top_performers_content(performers, year, month)
 
-        existing = Announcement.objects.filter(reference_key=reference_key).first()
+        existing = Announcement.objects.filter(idempotency_key=idempotency_key).first()
         if existing is None:
             Announcement.objects.create(
                 type=Announcement.Type.MONTH_TOP_PERFORMERS,
                 title=title,
                 content=content,
                 publish_at=timezone.now(),
-                reference_key=reference_key,
+                idempotency_key=idempotency_key,
             )
-            self.stdout.write(f"Queued {reference_key} for delivery.")
+            self.stdout.write(f"Queued {idempotency_key} for delivery.")
             return
 
         existing.title, existing.content = title, content
         existing.save(update_fields=["title", "content", "updated_at"])
         self._refresh_delivered_message(existing)
-        self.stdout.write(f"Updated {reference_key}.")
+        self.stdout.write(f"Updated {idempotency_key}.")
 
     def _refresh_delivered_message(self, announcement: Announcement) -> None:
         """Bring an already-posted Discord message back in line with the announcement."""
