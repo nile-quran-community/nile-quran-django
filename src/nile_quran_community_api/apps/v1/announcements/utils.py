@@ -1,14 +1,6 @@
-"""The verse that opens the monthly leaderboard.
-
-Chosen from the Hijri month rather than at random: the announcement can be
-regenerated, and a rerun edits the message already in Discord, so the same month has
-to keep producing the same verse.
-
-NOTE: Seed list. Verify the attributions and replace these with the community's own
-choices — the comments record where each is believed to come from.
-"""
-
 # Each entry is one or two أبيات, hemistichs on their own lines.
+# NOTE: Seed list. Verify the attributions and replace these with the community's own
+# choices — the comments record where each is believed to come from.
 VERSES: tuple[str, ...] = (
     # الطغرائي — لامية العجم
     """حُبُّ السَلامَةِ يُثني هَمَّ صاحِبِهِ
@@ -31,7 +23,12 @@ VERSES: tuple[str, ...] = (
 )
 
 
-def for_month(hijri_year: int, hijri_month: int) -> str:
-    """The verse for a given Hijri month. Same month, same verse, every time."""
+def verse_for_month(hijri_year: int, hijri_month: int) -> str:
+    """The verse that opens a month's leaderboard.
+
+    Picked from the month rather than at random: the announcement can be regenerated
+    and a rerun edits the message already in Discord, so the same month has to keep
+    producing the same verse.
+    """
 
     return VERSES[(hijri_year * 12 + hijri_month) % len(VERSES)]

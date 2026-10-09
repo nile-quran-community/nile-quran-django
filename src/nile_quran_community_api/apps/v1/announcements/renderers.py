@@ -11,7 +11,7 @@ stored on the announcement so the row stays a record of what was posted.
 from django.conf import settings
 
 from ..users.services import Performer
-from . import hijri, poetry
+from . import hijri, utils
 from .integrations.discord import Embed, Message, mention
 from .models import Announcement
 
@@ -79,7 +79,7 @@ def top_performers_content(
 
     blocks = [
         BANNER,
-        poetry.for_month(hijri_year, hijri_month),
+        utils.verse_for_month(hijri_year, hijri_month),
         BANNER,
         INTRO.format(month=hijri.month_name(hijri_year, hijri_month)),
     ]

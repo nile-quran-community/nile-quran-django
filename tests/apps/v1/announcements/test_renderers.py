@@ -2,7 +2,7 @@ import datetime as dt
 
 import pytest
 
-from nile_quran_community_api.apps.v1.announcements import poetry, renderers
+from nile_quran_community_api.apps.v1.announcements import renderers, utils
 from nile_quran_community_api.apps.v1.announcements.integrations import discord
 from nile_quran_community_api.apps.v1.announcements.models import Announcement
 from nile_quran_community_api.apps.v1.users.services import Performer
@@ -26,7 +26,7 @@ class TestTopPerformersContent:
         content = renderers.top_performers_content([performer("a", 5, 1)], *SHAABAN)
 
         assert content.startswith(renderers.BANNER)
-        assert poetry.for_month(*SHAABAN) in content
+        assert utils.verse_for_month(*SHAABAN) in content
 
     def test_greets_the_month_that_ended(self, performer):
         content = renderers.top_performers_content([performer("a", 5, 1)], *SHAABAN)
@@ -132,10 +132,10 @@ class TestPoetry:
     def test_the_same_month_always_gets_the_same_verse(self):
         """A rerun edits the posted message, so the verse must not drift."""
 
-        assert poetry.for_month(*SHAABAN) == poetry.for_month(*SHAABAN)
+        assert utils.verse_for_month(*SHAABAN) == utils.verse_for_month(*SHAABAN)
 
     def test_consecutive_months_differ(self):
-        assert poetry.for_month(1447, 8) != poetry.for_month(1447, 9)
+        assert utils.verse_for_month(1447, 8) != utils.verse_for_month(1447, 9)
 
 
 @pytest.mark.django_db
