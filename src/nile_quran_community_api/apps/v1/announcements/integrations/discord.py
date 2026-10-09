@@ -26,7 +26,11 @@ class MessageNotFound(Exception):
     """The message we hold an ID for is no longer in the channel."""
 
 
-type Member = dict[str, str]
+class Member(t.TypedDict):
+    """A server member, by the name the server shows for them."""
+
+    id: str
+    name: str
 
 
 class Embed(t.TypedDict):
