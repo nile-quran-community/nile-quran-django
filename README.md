@@ -140,7 +140,7 @@ django-admin link_discord_accounts --dry-run   # report without saving
 django-admin link_discord_accounts
 ```
 
-Matching folds Arabic spelling variants (alef forms, taa marbuta, diacritics, tatweel) and compares against each member's nickname, display name and username. It is deliberately strict: a user is linked only when their name matches exactly one member _and_ that member matches exactly one user. Anything else — a name shared by two students, a student absent from the server — is reported for an admin to resolve, since a wrong link would mention the wrong person. Users who already have an ID are never touched, so the command is safe to re-run as the community grows.
+Matching compares a student's first and last name against each member's **display name** — their nickname on the server when they have set one, their Discord display name otherwise. Arabic spelling variants (alef forms, taa marbuta, diacritics, tatweel) are folded first, since they vary with whoever typed the name. It is deliberately strict: a user is linked only when their name matches exactly one member _and_ that member matches exactly one user. Anything else — a name shared by two students, a student absent from the server — is reported for an admin to resolve, since a wrong link would mention the wrong person. Users who already have an ID are never touched, so the command is safe to re-run as the community grows.
 
 This command additionally needs `DISCORD_GUILD_ID` and the **Server Members** privileged intent enabled for the bot in the Discord developer portal. Posting and editing announcements needs neither.
 

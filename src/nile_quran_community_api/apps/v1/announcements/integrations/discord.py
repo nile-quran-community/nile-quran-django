@@ -61,7 +61,10 @@ def edit_message(channel_id: str, message_id: str, embed: dict) -> None:
 
 
 def list_members(guild_id: str) -> list[dict]:
-    """Every human member of the server, with the names they are known by.
+    """Every human member of the server, by the name the server shows for them.
+
+    `display_name` is their nickname on this server when they have set one, and their
+    Discord display name otherwise — the name other members actually see.
 
     `fetch_members` is the HTTP route, so this still needs no gateway, but it does
     require the Server Members intent to be enabled for the bot.
@@ -72,14 +75,7 @@ def list_members(guild_id: str) -> list[dict]:
     async def fetch(client):
         guild = await client.fetch_guild(int(guild_id))
         return [
-            {
-                "id": str(member.id),
-                "names": [
-                    name
-                    for name in (member.nick, member.global_name, member.name)
-                    if name
-                ],
-            }
+            {"id": str(member.id), "name": member.display_name}
             async for member in guild.fetch_members(limit=None)
             if not member.bot
         ]
@@ -89,4 +85,5 @@ def list_members(guild_id: str) -> list[dict]:
 
 def mention(discord_id: str, fallback: str) -> str:
     """Render a user as a Discord mention, or as plain text when we have no ID."""
+
     return f"<@{discord_id}>" if discord_id else fallback

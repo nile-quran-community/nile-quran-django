@@ -40,7 +40,7 @@ def server_members(monkeypatch, settings):
 class TestLinkDiscordAccounts:
     def test_saves_the_id_of_an_unambiguous_match(self, make_user, server_members):
         user = make_user("ahmed", "أحمد", "علي")
-        server_members.append({"id": "111", "names": ["احمد علي"]})
+        server_members.append({"id": "111", "name": "احمد علي"})
 
         call_command("link_discord_accounts")
 
@@ -49,7 +49,7 @@ class TestLinkDiscordAccounts:
 
     def test_dry_run_saves_nothing(self, make_user, server_members):
         user = make_user("ahmed", "أحمد", "علي")
-        server_members.append({"id": "111", "names": ["أحمد علي"]})
+        server_members.append({"id": "111", "name": "أحمد علي"})
 
         call_command("link_discord_accounts", "--dry-run")
 
@@ -58,7 +58,7 @@ class TestLinkDiscordAccounts:
 
     def test_leaves_an_existing_id_untouched(self, make_user, server_members):
         user = make_user("ahmed", "أحمد", "علي", discord_id="999")
-        server_members.append({"id": "111", "names": ["أحمد علي"]})
+        server_members.append({"id": "111", "name": "أحمد علي"})
 
         call_command("link_discord_accounts")
 
@@ -68,7 +68,7 @@ class TestLinkDiscordAccounts:
     def test_does_not_link_an_ambiguous_name(self, make_user, server_members):
         first = make_user("ahmed1", "أحمد", "علي")
         second = make_user("ahmed2", "أحمد", "علي")
-        server_members.append({"id": "111", "names": ["أحمد علي"]})
+        server_members.append({"id": "111", "name": "أحمد علي"})
 
         call_command("link_discord_accounts")
 
@@ -79,7 +79,7 @@ class TestLinkDiscordAccounts:
     def test_links_only_the_users_it_can_place(self, make_user, server_members):
         matched = make_user("ahmed", "أحمد", "علي")
         missing = make_user("omar", "عمر", "حسن")
-        server_members.append({"id": "111", "names": ["أحمد علي"]})
+        server_members.append({"id": "111", "name": "أحمد علي"})
 
         call_command("link_discord_accounts")
 
@@ -90,7 +90,7 @@ class TestLinkDiscordAccounts:
 
     def test_rerunning_is_harmless(self, make_user, server_members):
         user = make_user("ahmed", "أحمد", "علي")
-        server_members.append({"id": "111", "names": ["أحمد علي"]})
+        server_members.append({"id": "111", "name": "أحمد علي"})
 
         call_command("link_discord_accounts")
         call_command("link_discord_accounts")

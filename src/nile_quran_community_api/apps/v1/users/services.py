@@ -2,7 +2,6 @@ import dataclasses
 import datetime as dt
 import re
 import unicodedata
-from collections import Counter
 
 from django.db.models import F, Prefetch, QuerySet, Sum
 
@@ -101,8 +100,7 @@ def match_discord_members(members: list[dict]) -> DiscordMatches:
     """
     by_name: dict[str, set[str]] = {}
     for member in members:
-        for name in member["names"]:
-            by_name.setdefault(normalize_name(name), set()).add(member["id"])
+        by_name.setdefault(normalize_name(member["name"]), set()).add(member["id"])
 
     candidates: dict[str, list[User]] = {}
     for user in User.objects.filter(is_active=True, discord_id=""):
@@ -111,22 +109,13 @@ def match_discord_members(members: list[dict]) -> DiscordMatches:
             candidates.setdefault(name, []).append(user)
 
     matches = DiscordMatches()
-    users = {}
     for name, found in candidates.items():
         discord_ids = by_name.get(name, set())
-        users.update({user.pk: user for user in found})
         if len(found) == 1 and len(discord_ids) == 1:
             matches.linked[found[0].pk] = next(iter(discord_ids))
         elif discord_ids:
             matches.ambiguous.extend(found)
         else:
             matches.unmatched.extend(found)
-
-    # One Discord account cannot belong to two people, even if both names fit it.
-    contested = Counter(matches.linked.values())
-    for pk, discord_id in list(matches.linked.items()):
-        if contested[discord_id] > 1:
-            del matches.linked[pk]
-            matches.ambiguous.append(users[pk])
 
     return matches

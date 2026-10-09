@@ -8,8 +8,9 @@ from nile_quran_community_api.apps.v1.users.services import (
 )
 
 
-def member(discord_id: str, *names: str) -> dict:
-    return {"id": discord_id, "names": list(names)}
+def member(discord_id: str, name: str) -> dict:
+    """A server member as `list_members` reports them: one ID, one display name."""
+    return {"id": discord_id, "name": name}
 
 
 @pytest.fixture
@@ -60,10 +61,13 @@ class TestMatchDiscordMembers:
         assert matches.linked == {user.pk: "111"}
         assert matches.unmatched == matches.ambiguous == []
 
-    def test_matches_against_nickname_global_name_or_username(self, make_user):
+    def test_matches_a_server_nickname(self, make_user):
+        """display_name is the server nickname when one is set."""
         user = make_user("ahmed", "أحمد", "علي")
 
-        matches = match_discord_members([member("111", "Ahmoody", "أحمد علي")])
+        matches = match_discord_members(
+            [member("111", "أحمد علي"), member("222", "Ahmoody")]
+        )
 
         assert matches.linked == {user.pk: "111"}
 
@@ -93,16 +97,6 @@ class TestMatchDiscordMembers:
 
         assert matches.linked == {}
         assert matches.ambiguous == [user]
-
-    def test_one_account_is_never_claimed_by_two_users(self, make_user):
-        """A member whose nickname and username name different people links to neither."""
-        first = make_user("ahmed", "أحمد", "علي")
-        second = make_user("omar", "عمر", "حسن")
-
-        matches = match_discord_members([member("111", "أحمد علي", "عمر حسن")])
-
-        assert matches.linked == {}
-        assert {u.pk for u in matches.ambiguous} == {first.pk, second.pk}
 
     def test_users_who_already_have_an_id_are_left_alone(self, make_user):
         make_user("ahmed", "أحمد", "علي", discord_id="999")
