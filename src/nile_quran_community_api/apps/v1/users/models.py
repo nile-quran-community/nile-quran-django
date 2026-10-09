@@ -82,7 +82,7 @@ class User(AbstractUser):
         max_length=32,
         blank=True,
         help_text=_(
-            "Discord account ID, used to mention the user in announcements. "
+            "Discord account ID, used to mention the user in announcements."
             "Found via Discord's Developer Mode (right click a user, Copy User ID)."
         ),
     )
