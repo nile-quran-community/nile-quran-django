@@ -22,15 +22,22 @@ def _embed(payload: dict) -> discord.Embed:
     return discord.Embed(title=payload["title"], description=payload["description"])
 
 
-async def _with_channel(channel_id: str, action: t.Callable) -> t.Any:
-    """Log in over REST, hand `action` the channel, and close cleanly afterwards."""
-    client = discord.Client(intents=discord.Intents.none())
+async def _session(action: t.Callable, intents: discord.Intents | None = None) -> t.Any:
+    """Log in over REST, hand `action` the client, and close cleanly afterwards."""
+
+    client = discord.Client(intents=intents or discord.Intents.none())
     await client.login(settings.DISCORD_BOT_TOKEN)
     try:
-        channel = await client.fetch_channel(int(channel_id))
-        return await action(channel)
+        return await action(client)
     finally:
         await client.close()
+
+
+def _with_channel(channel_id: str, action: t.Callable) -> t.Any:
+    async def resolve(client):
+        return await action(await client.fetch_channel(int(channel_id)))
+
+    return asyncio.run(_session(resolve))
 
 
 def post_message(channel_id: str, embed: dict) -> str:
@@ -40,7 +47,7 @@ def post_message(channel_id: str, embed: dict) -> str:
         message = await channel.send(embed=_embed(embed))
         return str(message.id)
 
-    return asyncio.run(_with_channel(channel_id, send))
+    return _with_channel(channel_id, send)
 
 
 def edit_message(channel_id: str, message_id: str, embed: dict) -> None:
@@ -50,7 +57,34 @@ def edit_message(channel_id: str, message_id: str, embed: dict) -> None:
         # Partial: we already know the ID, so there is nothing to fetch first.
         await channel.get_partial_message(int(message_id)).edit(embed=_embed(embed))
 
-    asyncio.run(_with_channel(channel_id, edit))
+    _with_channel(channel_id, edit)
+
+
+def list_members(guild_id: str) -> list[dict]:
+    """Every human member of the server, with the names they are known by.
+
+    `fetch_members` is the HTTP route, so this still needs no gateway, but it does
+    require the Server Members intent to be enabled for the bot.
+    """
+    intents = discord.Intents.none()
+    intents.members = True
+
+    async def fetch(client):
+        guild = await client.fetch_guild(int(guild_id))
+        return [
+            {
+                "id": str(member.id),
+                "names": [
+                    name
+                    for name in (member.nick, member.global_name, member.name)
+                    if name
+                ],
+            }
+            async for member in guild.fetch_members(limit=None)
+            if not member.bot
+        ]
+
+    return asyncio.run(_session(fetch, intents=intents))
 
 
 def mention(discord_id: str, fallback: str) -> str:

@@ -31,6 +31,8 @@ DISCORD_ANNOUNCEMENTS_CHANNEL_ID: str = os.getenv(
     "DISCORD_ANNOUNCEMENTS_CHANNEL_ID", ""
 )
 
+DISCORD_GUILD_ID: str = os.getenv("DISCORD_GUILD_ID", "")
+
 # WARN: Database defaults to db.sqlite in nile_quran_community_api directory if DATABASE_URL is not set
 # Refer to https://pypi.org/project/dj-database-url/ for URL schemas for different databases
 DATABASES: dict[str, dj_database_url.DBConfig] = {
