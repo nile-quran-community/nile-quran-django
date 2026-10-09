@@ -131,6 +131,22 @@ edit the message already in Discord instead of posting a second one. Pass `--dat
 
 Both require `DISCORD_BOT_TOKEN` and `DISCORD_ANNOUNCEMENTS_CHANNEL_ID`. With either unset, `publish_announcements` sends nothing.
 
+### Bot setup
+
+Invite the bot with the `bot` scope and these permissions:
+
+```
+https://discord.com/oauth2/authorize?client_id=YOUR_APP_ID&scope=bot&permissions=150528
+```
+
+`150528` is View Channel (1024) + Send Messages (2048) + Embed Links (16384) + Mention Everyone (131072). The last is needed because the monthly post opens with `@everyone`; drop it from the bitfield if you remove that from the template.
+
+Announcements are sent as an embed with `@everyone` in the message content. That split is deliberate: Discord builds a message's notification list by parsing the `content` field, so a mention placed inside an embed renders as a name but pings nobody.
+
+Posting and editing need no privileged intents. Only `link_discord_accounts` does — see below.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ### Linking Discord accounts
 
 Announcements mention students by Discord ID. Rather than entering each one by hand, run `link_discord_accounts` to match community members against the server's member list by name and fill in the IDs that are missing:
