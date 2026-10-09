@@ -119,10 +119,10 @@ Announcements reach Discord through two management commands. Both are one-shot a
 stateless, so they run as Kubernetes CronJobs against the published image (the manifests
 live in the infrastructure repository, not here).
 
-| Command                   | Schedule            | What it does                                                                                                                                                         |
-| ------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `publish_announcements`   | `*/5 * * * *`       | Posts every announcement whose `publish_at` has passed and that Discord has not already received. Failures are recorded on the delivery and retried on the next run. |
-| `generate_top_performers` | `0 1 * * *` (daily) | Exits unless today is the first of a Hijri month. On the first, writes the previous Hijri month's top-three leaderboard and queues it for delivery.                  |
+| Command                   | Schedule            | What it does                                                                                                                                                                                                                             |
+| ------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `publish_announcements`   | `*/5 * * * *`       | Posts every announcement whose `publish_at` has passed and that Discord has not already received. An announcement with no `publish_at` is a draft and never goes out. Failures are recorded on the delivery and retried on the next run. |
+| `generate_top_performers` | `0 1 * * *` (daily) | Exits unless today is the first of a Hijri month. On the first, writes the previous Hijri month's top-three leaderboard and queues it for delivery.                                                                                      |
 
 `generate_top_performers` runs daily rather than monthly so that a day the cluster was
 unavailable is picked up on the next run; reruns update the existing announcement and
@@ -130,6 +130,10 @@ edit the message already in Discord instead of posting a second one. Pass `--dat
 `--force` to exercise it by hand.
 
 Both require `DISCORD_BOT_TOKEN` and `DISCORD_ANNOUNCEMENTS_CHANNEL_ID`. With either unset, `publish_announcements` sends nothing.
+
+An announcement's `status` is derived rather than stored: no `publish_at` reads as draft, a future one as scheduled, and the delivery records decide whether it is pending, published or failed. It is read-only over the API — schedule by setting `publish_at`. Deriving it means a stored value can never contradict what Discord actually received.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ### Bot setup
 
