@@ -42,7 +42,7 @@ class TestTopPerformers:
 
         performers = top_performers(WINDOW_START, WINDOW_END)
 
-        assert [p.username for p in performers] == ["first", "second", "third"]
+        assert [p.user.username for p in performers] == ["first", "second", "third"]
         assert [p.rank for p in performers] == [1, 2, 3]
 
     def test_ties_share_a_rank_and_both_are_returned(self, make_student):
@@ -52,7 +52,7 @@ class TestTopPerformers:
 
         performers = top_performers(WINDOW_START, WINDOW_END)
 
-        assert {p.username for p in performers[:2]} == {"tied_a", "tied_b"}
+        assert {p.user.username for p in performers[:2]} == {"tied_a", "tied_b"}
         assert [p.rank for p in performers] == [1, 1, 2]
 
     def test_a_tie_at_the_cutoff_returns_more_than_three_students(self, make_student):
@@ -78,7 +78,7 @@ class TestTopPerformers:
         make_student("active", 4)
         make_student("idle", 0)
 
-        assert [p.username for p in top_performers(WINDOW_START, WINDOW_END)] == [
+        assert [p.user.username for p in top_performers(WINDOW_START, WINDOW_END)] == [
             "active"
         ]
 
@@ -87,7 +87,7 @@ class TestTopPerformers:
         make_student("before", 99, date=WINDOW_START - dt.timedelta(days=1))
         make_student("after", 99, date=WINDOW_END)
 
-        assert [p.username for p in top_performers(WINDOW_START, WINDOW_END)] == [
+        assert [p.user.username for p in top_performers(WINDOW_START, WINDOW_END)] == [
             "inside"
         ]
 
@@ -95,7 +95,7 @@ class TestTopPerformers:
         make_student("active", 4)
         make_student("deactivated", 99, is_active=False)
 
-        assert [p.username for p in top_performers(WINDOW_START, WINDOW_END)] == [
+        assert [p.user.username for p in top_performers(WINDOW_START, WINDOW_END)] == [
             "active"
         ]
 
@@ -108,7 +108,7 @@ class TestTopPerformers:
             date=INSIDE,
         )
 
-        assert [p.username for p in top_performers(WINDOW_START, WINDOW_END)] == [
+        assert [p.user.username for p in top_performers(WINDOW_START, WINDOW_END)] == [
             "student"
         ]
 

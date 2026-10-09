@@ -5,21 +5,17 @@ import pytest
 from nile_quran_community_api.apps.v1.announcements import poetry, renderers
 from nile_quran_community_api.apps.v1.announcements.integrations import discord
 from nile_quran_community_api.apps.v1.announcements.models import Announcement
+from nile_quran_community_api.apps.v1.users.services import Performer
 
 IN_SHAABAN = dt.date(2026, 2, 1)
 SHAABAN = (1447, 8)
-
-
-def ranked(student, points, rank):
-    student.points, student.rank = points, rank
-    return student
 
 
 @pytest.fixture
 def performer(make_student):
     def _make(username, points, rank, discord_id=""):
         student = make_student(username, points, IN_SHAABAN, discord_id=discord_id)
-        return ranked(student, points, rank)
+        return Performer(user=student, points=points, rank=rank)
 
     return _make
 

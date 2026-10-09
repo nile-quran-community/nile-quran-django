@@ -10,7 +10,7 @@ stored on the announcement so the row stays a record of what was posted.
 
 from django.conf import settings
 
-from ..users.models import User
+from ..users.services import Performer
 from . import hijri, poetry
 from .integrations.discord import Embed, Message, mention
 from .models import Announcement
@@ -46,24 +46,27 @@ def _points(points: int) -> str:
     return f"ب{points} {'نقاط' if points <= 10 else 'نقطة'}"
 
 
-def _names(students: list[User]) -> str:
+def _names(performers: list[Performer]) -> str:
     """Students sharing a rank are listed together on one line."""
 
     return " و ".join(
-        mention(student.discord_id, f"{student.first_name} {student.last_name}")
-        for student in students
+        mention(
+            performer.user.discord_id,
+            f"{performer.user.first_name} {performer.user.last_name}",
+        )
+        for performer in performers
     )
 
 
-def _ranked(performers: list[User]) -> dict[int, list[User]]:
-    groups: dict[int, list[User]] = {}
-    for student in performers:
-        groups.setdefault(student.rank, []).append(student)
+def _ranked(performers: list[Performer]) -> dict[int, list[Performer]]:
+    groups: dict[int, list[Performer]] = {}
+    for performer in performers:
+        groups.setdefault(performer.rank, []).append(performer)
     return groups
 
 
 def top_performers_content(
-    performers: list[User],
+    performers: list[Performer],
     hijri_year: int,
     hijri_month: int,
 ) -> str:
