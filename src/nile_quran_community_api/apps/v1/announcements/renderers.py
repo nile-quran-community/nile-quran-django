@@ -203,13 +203,13 @@ def top_performers_content(
 
 
 def announcement_embed(announcement: Announcement) -> Embed:
-    return {"title": announcement.title, "description": announcement.content}
+    return Embed(title=announcement.title, description=announcement.content)
 
 
 def announcement_message(announcement: Announcement) -> Message:
     """Ping in the content, body in the embed — an embed on its own notifies nobody."""
 
-    return {
-        "content": MENTION_EVERYONE,
-        "embed": announcement_embed(announcement),
-    }
+    return Message(
+        content=MENTION_EVERYONE,
+        embed=announcement_embed(announcement),
+    )

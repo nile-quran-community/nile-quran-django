@@ -119,7 +119,7 @@ def list_members(guild_id: str) -> list[Member]:
     async def fetch(client: discord.Client) -> list[Member]:
         guild = await client.fetch_guild(int(guild_id))
         return [
-            {"id": str(member.id), "name": member.display_name}
+            Member(id=str(member.id), name=member.display_name)
             async for member in guild.fetch_members(limit=None)
             if not member.bot
         ]
