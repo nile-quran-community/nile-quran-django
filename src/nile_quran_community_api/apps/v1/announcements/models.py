@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 class Announcement(models.Model):
     class Meta:
+        ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
                 fields=("idempotency_key",),
@@ -66,6 +67,7 @@ class Announcement(models.Model):
 
 class AnnouncementDelivery(models.Model):
     class Meta:
+        ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
                 fields=("announcement", "channel"),
