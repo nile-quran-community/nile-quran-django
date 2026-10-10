@@ -9,6 +9,7 @@ work in `asyncio.run`.
 """
 
 import asyncio
+import enum
 import typing as t
 
 import discord
@@ -17,9 +18,10 @@ from django.conf import settings
 # Raised for anything the caller should treat as a delivery failure rather than a bug.
 DeliveryError = (discord.DiscordException, OSError)
 
-# Discord's code for "Unknown Message". A 404 on its own is not enough to go on: a
-# missing channel answers 404 too, and that one leaves the message itself intact.
-_UNKNOWN_MESSAGE = 10008
+
+class DiscordErrorCode(enum.IntEnum):
+    UNKNOWN_MESSAGE = 10008
+    UNKNOWN_CHANNEL = 10003
 
 
 class MessageNotFound(Exception):
@@ -96,7 +98,7 @@ def edit_message(channel_id: str, message_id: str, payload: Message) -> None:
                 content=payload["content"], embed=_embed(payload["embed"])
             )
         except discord.NotFound as error:
-            if error.code != _UNKNOWN_MESSAGE:
+            if error.code != DiscordErrorCode.UNKNOWN_MESSAGE:
                 raise
             raise MessageNotFound(message_id) from error
 

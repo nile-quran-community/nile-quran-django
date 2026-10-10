@@ -15,7 +15,6 @@ class AnnouncementDeliverySerializer(ModelSerializer):
 
 
 class AnnouncementSerializer(ModelSerializer):
-    # Derived on the model, so read-only here: clients schedule with publish_at.
     status = ReadOnlyField()
     deliveries = AnnouncementDeliverySerializer(many=True, read_only=True)
     created_by = SlugRelatedField(

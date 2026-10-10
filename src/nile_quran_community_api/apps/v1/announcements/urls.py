@@ -6,7 +6,7 @@ from .views import AnnouncementDeliveryViewSet, AnnouncementViewSet
 app_name: str = "announcements"
 
 router: DefaultRouter = DefaultRouter()
-router.register("", AnnouncementViewSet, basename="announcement")
 router.register("deliveries", AnnouncementDeliveryViewSet, basename="delivery")
+router.register("", AnnouncementViewSet, basename="announcement")
 
 urlpatterns: list[URLPattern | URLResolver] = [path("", include(router.urls))]
