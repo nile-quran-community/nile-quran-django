@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-23 19:18+0000\n"
+"POT-Creation-Date: 2026-10-10 08:24+0000\n"
 "PO-Revision-Date: 2026-03-23 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Arabic <ar@li.org>\n"
@@ -75,16 +75,12 @@ msgstr ""
 msgid "user"
 msgstr "مستخدم"
 
-#, fuzzy
-#| msgid "user"
 msgid "users"
 msgstr "مستخدمون"
 
-msgid "Can change the user's activities"
-msgstr "يمكن تغيير أنشطة المستخدم"
+msgid "A user with that username already exists."
+msgstr "اسم المستخدم محجوز بالفعل"
 
-#, fuzzy
-#| msgid "Username"
 msgid "username"
 msgstr "اسم المستخدم"
 
@@ -92,16 +88,9 @@ msgid "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
 msgstr ""
 "مطلوب. 150 حرفًا أو أقل. يُسمح فقط بالأحرف والأرقام والرموز @ و . و + و - و _."
 
-msgid "A user with that username already exists."
-msgstr "اسم المستخدم محجوز بالفعل"
-
-#, fuzzy
-#| msgid "First Name"
 msgid "first name"
 msgstr "الاسم الأول"
 
-#, fuzzy
-#| msgid "Last Name"
 msgid "last name"
 msgstr "اسم العائلة"
 
@@ -113,6 +102,17 @@ msgstr "مرجع إحالة المستخدم."
 
 msgid "User supervisor reference (required for students)."
 msgstr "مرجع مشرف المستخدم (مطلوب للطلاب)."
+
+msgid "discord ID"
+msgstr "معرف ديسكورد"
+
+msgid ""
+"Discord account ID, used to mention the user in announcements.Found via "
+"Discord's Developer Mode (right click a user, Copy User ID)."
+msgstr ""
+"معرف حساب ديسكورد، يُستخدم للإشارة إلى المستخدم في الإعلانات. يمكن الحصول "
+"عليه من وضع المطوّر في ديسكورد (انقر بزر الماوس الأيمن على المستخدم، ثم اختر "
+"Copy User ID)."
 
 msgid "Categories"
 msgstr "الفئات"
