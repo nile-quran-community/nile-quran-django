@@ -1,0 +1,50 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-10 08:01+0000\n"
+"PO-Revision-Date: 2026-03-23 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Arabic <LL@li.org>\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+msgid "General"
+msgstr "عام"
+
+msgid "Weekly Reflection"
+msgstr "الخاطرة الأسبوعية"
+
+msgid "Gathering"
+msgstr "تجمع"
+
+msgid "Ilm Lesson"
+msgstr "درس علم"
+
+msgid "Month Top Performers"
+msgstr "أوائل الشهر"
+
+msgid "Draft"
+msgstr "مسودة"
+
+msgid "Scheduled"
+msgstr "مجدول"
+
+msgid "Pending"
+msgstr "قيد الانتظار"
+
+msgid "Published"
+msgstr "منشور"
+
+msgid "Failed"
+msgstr "فشل"
+
+msgid "Discord"
+msgstr "ديسكورد"
+
+msgid "Sent"
+msgstr "تم الإرسال"
