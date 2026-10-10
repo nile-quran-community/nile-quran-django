@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from django_stubs_ext import StrPromise
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
+from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
 
 from . import models
@@ -64,6 +65,7 @@ class UserSerializer(serializers.ModelSerializer):
         many=True,
         default=["Student"],
     )
+    phone_number = PhoneNumberField(required=False, allow_blank=True)
 
     class Meta:
         model = models.User
@@ -79,8 +81,23 @@ class UserSerializer(serializers.ModelSerializer):
             "date_joined",
             "groups",
             "is_active",
+            "phone_number",
+            "birth_date",
+            "academic_status",
+            "academic_status_other",
+            "faculty",
+            "faculty_other",
+            "academic_year",
+            "residence",
+            "hometown",
+            "memorized_juz",
+            "tajweed_level",
+            "has_islamic_studies",
+            "islamic_studies_source",
+            "skills",
+            "is_profile_complete",
         )
-        read_only_fields: t.Iterable[str] = ("date_joined",)
+        read_only_fields: t.Iterable[str] = ("date_joined", "is_profile_complete")
         extra_kwargs: dict = {"password": {"write_only": True}}
 
     def validate_username(self, value: str) -> str:

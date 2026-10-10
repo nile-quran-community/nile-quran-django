@@ -23,6 +23,7 @@ INSTALLED_APPS: list[str] = [
     "drf_spectacular",
     "django_filters",
     "corsheaders",
+    "phonenumber_field",
     # NOTE: API v1 apps
     *v1.APPS,
 ]

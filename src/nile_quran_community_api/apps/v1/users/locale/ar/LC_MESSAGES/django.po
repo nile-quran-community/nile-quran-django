@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-10 08:24+0000\n"
+"POT-Creation-Date: 2026-10-10 08:30+0000\n"
 "PO-Revision-Date: 2026-03-23 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Arabic <ar@li.org>\n"
@@ -72,6 +72,54 @@ msgstr ""
 "يرجى إدخال اسم مستخدم صالح. يجب ألا يحتوي إلا على حروف إنجليزية صغيرة أو "
 "كبيرة، وأرقام، والرموز @/./+/-/_."
 
+msgid "Undergraduate student"
+msgstr "طالب بكالوريوس"
+
+msgid "Postgraduate student"
+msgstr "طالب دراسات عليا"
+
+msgid "Other"
+msgstr "أخرى"
+
+msgid "Engineering"
+msgstr "هندسة"
+
+msgid "Computer Science / AI"
+msgstr "علوم حاسب / ذكاء اصطناعي"
+
+msgid "Business Administration"
+msgstr "إدارة أعمال"
+
+msgid "Biotechnology"
+msgstr "التكنولوجيا الحيوية"
+
+msgid "First year"
+msgstr "السنة الأولى"
+
+msgid "Second year"
+msgstr "السنة الثانية"
+
+msgid "Third year"
+msgstr "السنة الثالثة"
+
+msgid "Fourth year"
+msgstr "السنة الرابعة"
+
+msgid "Fifth year"
+msgstr "السنة الخامسة"
+
+msgid "Graduate"
+msgstr "خريج"
+
+msgid "Beginner (no prior exposure to tajweed rules)"
+msgstr "مبتدئ (لم يسبق التعرض لأحكام التجويد)"
+
+msgid "Intermediate (basic knowledge of tajweed rules)"
+msgstr "متوسط (على علم بسيط بأحكام التجويد)"
+
+msgid "Proficient (skilled knowledge of tajweed rules)"
+msgstr "متقن (على علم وإجادة لأحكام التجويد)"
+
 msgid "user"
 msgstr "مستخدم"
 
@@ -107,12 +155,57 @@ msgid "discord ID"
 msgstr "معرف ديسكورد"
 
 msgid ""
-"Discord account ID, used to mention the user in announcements.Found via "
+"Discord account ID, used to mention the user in announcements. Found via "
 "Discord's Developer Mode (right click a user, Copy User ID)."
 msgstr ""
 "معرف حساب ديسكورد، يُستخدم للإشارة إلى المستخدم في الإعلانات. يمكن الحصول "
 "عليه من وضع المطوّر في ديسكورد (انقر بزر الماوس الأيمن على المستخدم، ثم اختر "
 "Copy User ID)."
+
+msgid "phone number"
+msgstr ""
+
+msgid "Include your country code."
+msgstr "قم بتضمين رمز الدولة."
+
+msgid "birth date"
+msgstr "تاريخ الميلاد"
+
+msgid "academic status"
+msgstr "الحالة الدراسية"
+
+msgid "academic status (other)"
+msgstr "الحالة الدراسية (أخرى)"
+
+msgid "faculty"
+msgstr "الكلية"
+
+msgid "faculty (other)"
+msgstr "الكلية (أخرى)"
+
+msgid "academic year"
+msgstr "السنة الدراسية"
+
+msgid "residence"
+msgstr "مكان الإقامة الحالي"
+
+msgid "hometown"
+msgstr "الموطن الأصلي"
+
+msgid "memorized Quran parts (juz)"
+msgstr "عدد الأجزاء المحفوظة من القرآن"
+
+msgid "tajweed level"
+msgstr "مستوى إتقان التجويد"
+
+msgid "has prior Islamic studies"
+msgstr "تعلم علمًا شرعيًا من قبل"
+
+msgid "Islamic studies source"
+msgstr "مصدر تلقي العلم الشرعي"
+
+msgid "skills"
+msgstr "المهارات"
 
 msgid "Categories"
 msgstr "الفئات"

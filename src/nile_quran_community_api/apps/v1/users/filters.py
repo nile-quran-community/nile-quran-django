@@ -46,6 +46,15 @@ class UserFilter(django_filters.FilterSet):
     group: django_filters.CharFilter = django_filters.CharFilter(
         field_name="groups__name", lookup_expr="iexact"
     )
+    faculty: django_filters.CharFilter = django_filters.CharFilter(
+        field_name="faculty", lookup_expr="exact"
+    )
+    academic_year: django_filters.CharFilter = django_filters.CharFilter(
+        field_name="academic_year", lookup_expr="exact"
+    )
+    tajweed_level: django_filters.CharFilter = django_filters.CharFilter(
+        field_name="tajweed_level", lookup_expr="exact"
+    )
 
     class Meta:
         model = models.User

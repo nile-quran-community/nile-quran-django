@@ -632,3 +632,130 @@ class TestI18nAPI:
             "لم يتم العثور على مستخدم يطابق الاستعلام المحدد."
             in response.data["detail"]
         )
+
+
+COMPLETE_PROFILE_PAYLOAD = {
+    "phone_number": "+201001234567",
+    "birth_date": "2000-01-01",
+    "academic_status": "undergraduate",
+    "faculty": "engineering",
+    "academic_year": "3",
+    "residence": "الحي السابع",
+    "hometown": "القاهرة",
+    "memorized_juz": 5,
+    "tajweed_level": "intermediate",
+    "has_islamic_studies": False,
+}
+
+
+@pytest.mark.django_db
+class TestUserProfileFields:
+    def test_new_signup_profile_is_incomplete(self, client: APIClient, jwt_admin_token):
+        payload = {
+            "email": "incomplete@example.com",
+            "username": "incompleteuser",
+            "password": "testpass123",
+            "first_name": "أحمد",
+            "last_name": "محمد",
+        }
+        client.post("/users/", payload, format="json")
+        created = User.objects.get(username="incompleteuser")
+
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_admin_token}")
+        response: Response = client.get(f"/users/{created.id}/")
+        assert response.data["is_profile_complete"] is False
+
+    def test_profile_becomes_complete_once_every_field_is_filled(
+        self, client: APIClient, existing_user: User, jwt_user_token
+    ):
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_user_token}")
+        response: Response = client.patch(
+            f"/users/{existing_user.id}/", COMPLETE_PROFILE_PAYLOAD, format="json"
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["is_profile_complete"] is True
+
+    def test_other_choice_requires_its_free_text_field(
+        self, client: APIClient, existing_user: User, jwt_user_token
+    ):
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_user_token}")
+        payload = {**COMPLETE_PROFILE_PAYLOAD, "faculty": "other"}
+        response: Response = client.patch(
+            f"/users/{existing_user.id}/", payload, format="json"
+        )
+        assert response.status_code == status.HTTP_200_OK
+        # "faculty_other" was never provided, so the profile isn't complete yet.
+        assert response.data["is_profile_complete"] is False
+
+        response = client.patch(
+            f"/users/{existing_user.id}/",
+            {"faculty_other": "كلية الطب"},
+            format="json",
+        )
+        assert response.data["is_profile_complete"] is True
+
+    def test_islamic_studies_source_required_when_has_islamic_studies_true(
+        self, client: APIClient, existing_user: User, jwt_user_token
+    ):
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_user_token}")
+        payload = {**COMPLETE_PROFILE_PAYLOAD, "has_islamic_studies": True}
+        response: Response = client.patch(
+            f"/users/{existing_user.id}/", payload, format="json"
+        )
+        assert response.data["is_profile_complete"] is False
+
+        response = client.patch(
+            f"/users/{existing_user.id}/",
+            {"islamic_studies_source": "دورة في المسجد"},
+            format="json",
+        )
+        assert response.data["is_profile_complete"] is True
+
+    def test_user_can_update_own_profile_fields(
+        self, client: APIClient, existing_user: User, jwt_user_token
+    ):
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_user_token}")
+        response: Response = client.patch(
+            f"/users/{existing_user.id}/",
+            {"residence": "مدينة نصر", "memorized_juz": 10},
+            format="json",
+        )
+        existing_user.refresh_from_db()
+
+        assert response.status_code == status.HTTP_200_OK
+        assert existing_user.residence == "مدينة نصر"
+        assert existing_user.memorized_juz == 10
+
+    def test_user_cannot_update_other_users_profile_fields(
+        self, client: APIClient, existing_user: User, jwt_supervisor_token
+    ):
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_supervisor_token}")
+        response: Response = client.patch(
+            f"/users/{existing_user.id}/", {"residence": "مدينة نصر"}, format="json"
+        )
+        existing_user.refresh_from_db()
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert existing_user.residence == ""
+
+    def test_invalid_phone_number_rejected(
+        self, client: APIClient, existing_user: User, jwt_user_token
+    ):
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_user_token}")
+        response: Response = client.patch(
+            f"/users/{existing_user.id}/",
+            {"phone_number": "not-a-number"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "phone_number" in response.data
+
+    def test_memorized_juz_above_thirty_rejected(
+        self, client: APIClient, existing_user: User, jwt_user_token
+    ):
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_user_token}")
+        response: Response = client.patch(
+            f"/users/{existing_user.id}/", {"memorized_juz": 31}, format="json"
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "memorized_juz" in response.data
