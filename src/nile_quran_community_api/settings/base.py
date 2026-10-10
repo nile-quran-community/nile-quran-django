@@ -81,6 +81,17 @@ LANGUAGE_CODE: str = "en-us"
 
 TIME_ZONE: str = "UTC"
 
+# The community's local calendar. Hijri month boundaries are evaluated against this
+# rather than TIME_ZONE, so a new month starts at local midnight and not at 02:00.
+ANNOUNCEMENTS_TIMEZONE: str = "Africa/Cairo"
+
+# How many distinct point totals the monthly leaderboard covers, and how many of those
+# are announced as winners. The rest appear as honourable mentions. Ranking is dense,
+# so students on equal points share a rank and either section can name more people
+# than it has ranks.
+ANNOUNCEMENTS_TOTAL_RANKS: int = 5
+ANNOUNCEMENTS_WINNING_RANKS: int = 3
+
 USE_I18N: bool = True
 
 LANGUAGE_CODE = "en"

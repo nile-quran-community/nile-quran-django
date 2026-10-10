@@ -113,6 +113,59 @@ python src/manage.py runserver
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## Scheduled commands ⏰
+
+Announcements reach Discord through two management commands. Both are one-shot and
+stateless, so they run as Kubernetes CronJobs against the published image (the manifests
+live in the infrastructure repository, not here).
+
+| Command                   | Schedule            | What it does                                                                                                                                                                                                                             |
+| ------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `publish_announcements`   | `*/5 * * * *`       | Posts every announcement whose `publish_at` has passed and that Discord has not already received. An announcement with no `publish_at` is a draft and never goes out. Failures are recorded on the delivery and retried on the next run. |
+| `generate_top_performers` | `0 1 * * *` (daily) | During the first 7 days of a Hijri month, writes the previous month's top-three leaderboard and queues it for delivery, or refreshes it if it changed since the last run. Does nothing after day 7.                                      |
+
+`generate_top_performers` runs daily rather than monthly so that a day the cluster was
+unavailable is picked up on the next run, as long as that run is within the first week; reruns update the existing announcement and
+edit the message already in Discord instead of posting a second one, and do nothing when
+the leaderboard is unchanged. Pass `--date` to exercise it by hand.
+
+Both require `DISCORD_BOT_TOKEN` and `DISCORD_ANNOUNCEMENTS_CHANNEL_ID`. With either unset, `publish_announcements` sends nothing.
+
+An announcement's `status` is derived rather than stored: no `publish_at` reads as draft, a future one as scheduled, and the delivery records decide whether it is pending, published or failed. It is read-only over the API — schedule by setting `publish_at`. Deriving it means a stored value can never contradict what Discord actually received.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+### Bot setup
+
+Invite the bot with the `bot` scope and these permissions:
+
+```
+https://discord.com/oauth2/authorize?client_id=YOUR_APP_ID&scope=bot&permissions=150528
+```
+
+`150528` is View Channel (1024) + Send Messages (2048) + Embed Links (16384) + Mention Everyone (131072). The last is needed because the monthly post opens with `@everyone`; drop it from the bitfield if you remove that from the template.
+
+Announcements are sent as an embed with `@everyone` in the message content. That split is deliberate: Discord builds a message's notification list by parsing the `content` field, so a mention placed inside an embed renders as a name but pings nobody.
+
+Posting and editing need no privileged intents. Only `link_discord_accounts` does — see below.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+### Linking Discord accounts
+
+Announcements mention students by Discord ID. Rather than entering each one by hand, run `link_discord_accounts` to match community members against the server's member list by name and fill in the IDs that are missing:
+
+```sh
+django-admin link_discord_accounts --dry-run   # report without saving
+django-admin link_discord_accounts
+```
+
+Matching compares a student's first and last name against each member's **display name** — their nickname on the server when they have set one, their Discord display name otherwise. Arabic spelling variants (alef forms, taa marbuta, diacritics, tatweel) are folded first, since they vary with whoever typed the name. It is deliberately strict: a user is linked only when their name matches exactly one member _and_ that member matches exactly one user. Anything else — a name shared by two students, a student absent from the server — is reported for an admin to resolve, since a wrong link would mention the wrong person. Users who already have an ID are never touched, so the command is safe to re-run as the community grows.
+
+This command additionally needs `DISCORD_GUILD_ID` — "guild" is Discord's API name for a server, so this is the ID you get from right-clicking the server and choosing **Copy Server ID** with Developer Mode on — and the **Server Members** privileged intent enabled for the bot in the Discord developer portal. Posting and editing announcements needs neither.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Contributing 👥
 
 Contributions are welcome! To get started:
