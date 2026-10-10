@@ -1,9 +1,12 @@
 """Writes the monthly top-performers announcement.
 
-Scheduled daily rather than monthly: it exits immediately unless today is the first of a
-Hijri month, which means a day the cluster was unavailable is picked up on the next run.
-Reruns are safe — `idempotency_key` identifies the month, so a second run updates the
-existing announcement and edits the message already in Discord instead of posting again.
+Scheduled daily rather than monthly, and works on the Hijri month before today's during
+the first RETRY_DAYS days of a month, so a run missed on the first is picked up by a later
+one. After that the previous month is left alone: a leaderboard that late is stale, so it
+is abandoned rather than posted. Reruns are safe —
+`idempotency_key` identifies the month, so a later run updates the existing announcement
+and edits the message already in Discord instead of posting again, and does nothing at
+all when the leaderboard has not changed.
 """
 
 import datetime as dt
@@ -17,6 +20,8 @@ from ... import hijri, renderers
 from ...integrations import discord
 from ...models import Announcement, AnnouncementDelivery
 
+RETRY_DAYS = 7
+
 
 class Command(BaseCommand):
     help = "Create or refresh the previous Hijri month's top-performers announcement."
@@ -27,17 +32,12 @@ class Command(BaseCommand):
             type=dt.date.fromisoformat,
             help="Run as if today were this Gregorian date (YYYY-MM-DD).",
         )
-        parser.add_argument(
-            "--force",
-            action="store_true",
-            help="Run even when today is not the first of a Hijri month.",
-        )
 
     def handle(self, *args, **options) -> None:
         today = options["date"] or hijri.today()
-        if not options["force"] and not hijri.is_month_start(today):
+        if hijri.to_hijri(today).day > RETRY_DAYS:
             self.stdout.write(
-                f"{today} is not the start of a Hijri month; nothing to do."
+                f"{today} is past day {RETRY_DAYS} of the Hijri month; nothing to do."
             )
             return
 
@@ -66,6 +66,10 @@ class Command(BaseCommand):
                 idempotency_key=idempotency_key,
             )
             self.stdout.write(f"Queued {idempotency_key} for delivery.")
+            return
+
+        if (existing.title, existing.content) == (title, content):
+            self.stdout.write(f"{idempotency_key} is up to date.")
             return
 
         existing.title, existing.content = title, content

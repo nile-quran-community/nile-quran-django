@@ -7,10 +7,6 @@ RAMADAN_START = dt.date(2026, 2, 18)
 
 
 class TestHijri:
-    def test_detects_month_start(self):
-        assert hijri.is_month_start(RAMADAN_START)
-        assert not hijri.is_month_start(RAMADAN_START - dt.timedelta(days=1))
-
     def test_previous_month_is_the_one_that_just_ended(self):
         assert hijri.previous_month(RAMADAN_START) == (1447, 8)
 

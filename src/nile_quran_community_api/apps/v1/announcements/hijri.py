@@ -29,10 +29,6 @@ def to_hijri(date: dt.date) -> Hijri:
     return Gregorian(date.year, date.month, date.day).to_hijri()
 
 
-def is_month_start(date: dt.date) -> bool:
-    return to_hijri(date).day == 1
-
-
 def previous_month(date: dt.date) -> tuple[int, int]:
     """The (year, month) of the Hijri month before the one `date` falls in."""
 

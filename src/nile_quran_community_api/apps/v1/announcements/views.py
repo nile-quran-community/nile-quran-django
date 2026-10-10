@@ -14,6 +14,9 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
     permission_classes = [DjangoModelPermissions]
     queryset = Announcement.objects.prefetch_related("deliveries")
 
+    def perform_create(self, serializer: AnnouncementSerializer) -> None:
+        serializer.save(created_by=self.request.user)
+
 
 @extend_schema(tags=["announcements"])
 class AnnouncementDeliveryViewSet(viewsets.ReadOnlyModelViewSet):

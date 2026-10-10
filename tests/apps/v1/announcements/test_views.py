@@ -154,3 +154,45 @@ class TestAnnouncementViewSet:
             response = admin_client.get("/announcements/")
 
         assert response.data["count"] == 5
+
+    def test_create_attributes_the_announcement_to_the_requester(
+        self, admin_client, admin_user, supervisor_user
+    ):
+        response = admin_client.post(
+            "/announcements/",
+            {
+                "type": Announcement.Type.GENERAL,
+                "title": "إعلان",
+                "content": "نص",
+                "created_by": supervisor_user.username,
+            },
+            format="json",
+        )
+
+        assert response.status_code == http.HTTP_201_CREATED
+        assert Announcement.objects.get().created_by == admin_user
+
+    def test_a_generated_announcement_can_be_edited(self, admin_client):
+        record = announcement(created_by=None)
+
+        response = admin_client.put(
+            f"/announcements/{record.pk}/",
+            {"type": Announcement.Type.GENERAL, "title": "جديد", "content": "نص"},
+            format="json",
+        )
+
+        assert response.status_code == http.HTTP_200_OK
+
+    def test_rejects_content_discord_cannot_carry(self, admin_client):
+        response = admin_client.post(
+            "/announcements/",
+            {
+                "type": Announcement.Type.GENERAL,
+                "title": "إعلان",
+                "content": "ا" * 4097,
+            },
+            format="json",
+        )
+
+        assert response.status_code == http.HTTP_400_BAD_REQUEST
+        assert "content" in response.data

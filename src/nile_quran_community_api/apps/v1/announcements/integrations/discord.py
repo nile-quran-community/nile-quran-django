@@ -12,11 +12,13 @@ import asyncio
 import enum
 import typing as t
 
+import aiohttp
 import discord
 from django.conf import settings
 
 # Raised for anything the caller should treat as a delivery failure rather than a bug.
-DeliveryError = (discord.DiscordException, OSError)
+# aiohttp errors such as ServerDisconnectedError reach us unwrapped and are not OSErrors.
+DeliveryError = (discord.DiscordException, aiohttp.ClientError, OSError)
 
 
 class DiscordErrorCode(enum.IntEnum):

@@ -31,7 +31,7 @@ class Announcement(models.Model):
 
     type = models.CharField(max_length=32, choices=Type)
     title = models.CharField(max_length=255)
-    content = models.TextField()
+    content = models.TextField(max_length=4096)
     publish_at = models.DateTimeField(blank=True, null=True)
     idempotency_key = models.CharField(max_length=64, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -122,12 +122,12 @@ live in the infrastructure repository, not here).
 | Command                   | Schedule            | What it does                                                                                                                                                                                                                             |
 | ------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `publish_announcements`   | `*/5 * * * *`       | Posts every announcement whose `publish_at` has passed and that Discord has not already received. An announcement with no `publish_at` is a draft and never goes out. Failures are recorded on the delivery and retried on the next run. |
-| `generate_top_performers` | `0 1 * * *` (daily) | Exits unless today is the first of a Hijri month. On the first, writes the previous Hijri month's top-three leaderboard and queues it for delivery.                                                                                      |
+| `generate_top_performers` | `0 1 * * *` (daily) | During the first 7 days of a Hijri month, writes the previous month's top-three leaderboard and queues it for delivery, or refreshes it if it changed since the last run. Does nothing after day 7.                                      |
 
 `generate_top_performers` runs daily rather than monthly so that a day the cluster was
-unavailable is picked up on the next run; reruns update the existing announcement and
-edit the message already in Discord instead of posting a second one. Pass `--date` and
-`--force` to exercise it by hand.
+unavailable is picked up on the next run, as long as that run is within the first week; reruns update the existing announcement and
+edit the message already in Discord instead of posting a second one, and do nothing when
+the leaderboard is unchanged. Pass `--date` to exercise it by hand.
 
 Both require `DISCORD_BOT_TOKEN` and `DISCORD_ANNOUNCEMENTS_CHANNEL_ID`. With either unset, `publish_announcements` sends nothing.
 

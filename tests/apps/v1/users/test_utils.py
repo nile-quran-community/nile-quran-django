@@ -108,6 +108,15 @@ class TestMatchDiscordMembers:
         assert matches.linked == {}
         assert matches.unmatched == matches.ambiguous == []
 
+    def test_a_member_already_linked_to_someone_is_not_offered_again(self, make_user):
+        make_user("ahmed1", "أحمد", "علي", discord_id="111")
+        second = make_user("ahmed2", "أحمد", "علي")
+
+        matches = match_discord_members([member("111", "أحمد علي")])
+
+        assert matches.linked == {}
+        assert matches.unmatched == [second]
+
     def test_inactive_users_are_skipped(self, make_user):
         make_user("ahmed", "أحمد", "علي", is_active=False)
 

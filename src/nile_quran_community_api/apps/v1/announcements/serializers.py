@@ -4,7 +4,6 @@ from rest_framework.serializers import (
     SlugRelatedField,
 )
 
-from ..users.models import User
 from .models import Announcement, AnnouncementDelivery
 
 
@@ -17,11 +16,7 @@ class AnnouncementDeliverySerializer(ModelSerializer):
 class AnnouncementSerializer(ModelSerializer):
     status = ReadOnlyField()
     deliveries = AnnouncementDeliverySerializer(many=True, read_only=True)
-    created_by = SlugRelatedField(
-        queryset=User.objects.with_perm("announcements.add_announcement"),
-        slug_field="username",
-        required=True,
-    )
+    created_by = SlugRelatedField(slug_field="username", read_only=True)
 
     class Meta:
         model = Announcement

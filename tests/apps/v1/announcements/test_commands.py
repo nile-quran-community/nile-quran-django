@@ -1,5 +1,6 @@
 import datetime as dt
 
+import aiohttp
 import discord as discord_py
 import pytest
 from django.core.management import call_command
@@ -84,20 +85,39 @@ class TestGenerateTopPerformers:
         assert "شعبان" in announcement.title
         assert "10" in announcement.content
 
-    def test_does_nothing_outside_a_hijri_month_start(self, make_student):
-        make_student("winner", 10, IN_SHAABAN)
-
-        call_command("generate_top_performers", "--date=2026-02-10")
-
-        assert not Announcement.objects.exists()
-
-    def test_force_overrides_the_month_start_check(self, make_student):
+    def test_a_missed_month_start_is_picked_up_by_a_later_run(self, make_student):
         make_student("winner", 10, IN_SHAABAN)
 
         # Mid-Ramadan, so the month that just ended is still Sha'ban.
-        call_command("generate_top_performers", "--date=2026-02-20", "--force")
+        call_command("generate_top_performers", "--date=2026-02-20")
 
         assert Announcement.objects.filter(idempotency_key=SHAABAN_KEY).exists()
+
+    def test_runs_up_to_the_seventh_of_the_month(self, make_student):
+        make_student("winner", 10, IN_SHAABAN)
+
+        call_command("generate_top_performers", "--date=2026-02-24")  # 7 Ramadan
+
+        assert Announcement.objects.filter(idempotency_key=SHAABAN_KEY).exists()
+
+    def test_gives_up_on_the_previous_month_after_the_seventh(self, make_student):
+        make_student("winner", 10, IN_SHAABAN)
+
+        call_command("generate_top_performers", "--date=2026-02-25")  # 8 Ramadan
+
+        assert not Announcement.objects.exists()
+
+    def test_an_unchanged_leaderboard_leaves_discord_alone(
+        self, make_student, discord_api
+    ):
+        make_student("winner", 10, IN_SHAABAN)
+        call_command("generate_top_performers", f"--date={RAMADAN_START}")
+        call_command("publish_announcements")
+        discord_api.clear()
+
+        call_command("generate_top_performers", "--date=2026-02-20")
+
+        assert discord_api == []
 
     def test_skips_when_no_student_earned_points(self, make_student):
         make_student("idle", 0, IN_SHAABAN)
@@ -140,6 +160,7 @@ class TestGenerateTopPerformers:
         call_command("publish_announcements")
         announcement = Announcement.objects.get(idempotency_key=SHAABAN_KEY)
         discord_api.clear()
+        make_student("latecomer", 20, IN_SHAABAN)
 
         recording = discord.edit_message
 
@@ -166,6 +187,7 @@ class TestGenerateTopPerformers:
         call_command("generate_top_performers", f"--date={RAMADAN_START}")
         call_command("publish_announcements")
         announcement = Announcement.objects.get(idempotency_key=SHAABAN_KEY)
+        make_student("latecomer", 20, IN_SHAABAN)
 
         def channel_gone(*args, **kwargs):
             raise discord_py.DiscordException("unknown channel")
@@ -243,6 +265,23 @@ class TestPublishAnnouncements:
         assert delivery.status == AnnouncementDelivery.Status.SENT
         assert delivery.attempts == 2
         assert delivery.last_error == ""
+
+    def test_a_dropped_connection_is_recorded_and_the_run_continues(
+        self, discord_api, monkeypatch
+    ):
+        first, second = due_announcement(), due_announcement()
+
+        def disconnect(*args, **kwargs):
+            raise aiohttp.ServerDisconnectedError()
+
+        monkeypatch.setattr(discord, "post_message", disconnect)
+
+        call_command("publish_announcements")
+
+        for announcement in (first, second):
+            delivery = announcement.deliveries.get()
+            assert delivery.status == AnnouncementDelivery.Status.FAILED
+            assert delivery.attempts == 1
 
     def test_sends_nothing_when_discord_is_not_configured(self, settings, monkeypatch):
         settings.DISCORD_BOT_TOKEN = ""

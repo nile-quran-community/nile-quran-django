@@ -35,11 +35,16 @@ def match_discord_members(members: list[dict]) -> DiscordMatches:
     Deliberately strict: a user is linked only when their name matches exactly one
     member and that member matches exactly one user. A wrong link would mention, and
     later message, the wrong person, so anything uncertain is reported rather than
-    guessed at.
+    guessed at. Members already linked to someone are not candidates at all.
     """
 
+    taken = set(
+        User.objects.exclude(discord_id="").values_list("discord_id", flat=True)
+    )
     by_name: dict[str, set[str]] = {}
     for member in members:
+        if member["id"] in taken:
+            continue
         by_name.setdefault(normalize_name(member["name"]), set()).add(member["id"])
 
     candidates: dict[str, list[User]] = {}
