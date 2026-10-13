@@ -44,10 +44,20 @@ Follow these steps to set up the project locally.
 
 ### Prerequisites 📦
 
-- Python 3.12+
+- Python 3.13+
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
+
+On Ubuntu or WSL, install `uv` with the official installer:
 
 ```sh
-sudo apt install python3
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Load it into the current shell and check that it is available:
+
+```sh
+source "$HOME/.local/bin/env"
+uv --version
 ```
 
 - Docker (optional for containerized deployment)
@@ -70,31 +80,27 @@ git clone https://github.com/nile-quran-community/nile-quran-django.git
 cd nile-quran-django
 ```
 
-3. Set up a virtual environment and activate it
+3. Install the project dependencies
 
 ```sh
-python3 -m venv venv
-source venv/bin/activate
+uv sync --frozen
 ```
 
-4. Install dependencies
+`uv` creates the virtual environment and installs the dependencies declared in
+`pyproject.toml` using `uv.lock`.
+
+4. Apply database migrations, load initial data, and prepare roles
 
 ```sh
-pip install -r deps/requirements.prod.txt
+uv run python src/manage.py migrate
+uv run python src/manage.py loaddata category
+uv run python src/manage.py setuproles
 ```
 
-5. Apply database migrations, load initial data, and prepare roles
+5. Create a superuser for creating the first user
 
 ```sh
-python src/manage.py migrate
-python src/manage.py loaddata category
-python src/manage.py setuproles
-```
-
-6. Create a superuser for creating the first user
-
-```sh
-python src/manage.py createsuperuser
+uv run python src/manage.py createsuperuser
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -106,7 +112,7 @@ Here is how to use the project:
 1. Start the development server
 
 ```sh
-python src/manage.py runserver
+uv run python src/manage.py runserver
 ```
 
 2. Visit `http://127.0.0.1:8000` in your browser.
