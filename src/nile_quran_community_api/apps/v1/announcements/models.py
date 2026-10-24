@@ -31,6 +31,7 @@ class Announcement(models.Model):
 
     type = models.CharField(max_length=32, choices=Type)
     title = models.CharField(max_length=255)
+    summary = models.CharField(max_length=200, blank=True)
     content = models.TextField(max_length=4096)
     publish_at = models.DateTimeField(blank=True, null=True)
     idempotency_key = models.CharField(max_length=64, blank=True, db_index=True)
@@ -39,6 +40,12 @@ class Announcement(models.Model):
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         related_name="announcements",
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="edited_announcements",
         null=True,
         on_delete=models.SET_NULL,
     )
@@ -89,6 +96,9 @@ class AnnouncementDelivery(models.Model):
     attempts = models.PositiveIntegerField(default=0)
     last_error = models.TextField(blank=True)
     delivered_at = models.DateTimeField(blank=True, null=True)
+    # When the Discord message last matched the announcement; an announcement edited
+    # after this is re-synced by publish_announcements.
+    synced_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     announcement = models.ForeignKey(
