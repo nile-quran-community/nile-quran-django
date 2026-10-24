@@ -125,19 +125,25 @@ Announcements reach Discord through two management commands. Both are one-shot a
 stateless, so they run as Kubernetes CronJobs against the published image (the manifests
 live in the infrastructure repository, not here).
 
-| Command                   | Schedule            | What it does                                                                                                                                                                                                                             |
-| ------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `publish_announcements`   | `*/5 * * * *`       | Posts every announcement whose `publish_at` has passed and that Discord has not already received. An announcement with no `publish_at` is a draft and never goes out. Failures are recorded on the delivery and retried on the next run. |
-| `generate_top_performers` | `0 1 * * *` (daily) | During the first 7 days of a Hijri month, writes the previous month's top-three leaderboard and queues it for delivery, or refreshes it if it changed since the last run. Does nothing after day 7.                                      |
+| Command                   | Schedule            | What it does                                                                                                                                                                                                                                                                                          |
+| ------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `publish_announcements`   | `*/5 * * * *`       | Posts every announcement whose `publish_at` has passed and that Discord has not already received, and edits the message of any sent announcement edited since. An announcement with no `publish_at` is a draft and never goes out. Failures are recorded on the delivery and retried on the next run. |
+| `generate_top_performers` | `0 1 * * *` (daily) | During the first 7 days of a Hijri month, writes the previous month's top-three leaderboard and queues it for delivery, or updates it if it changed since the last run (the next `publish_announcements` run pushes the edit to Discord). Does nothing after day 7.                                   |
 
 `generate_top_performers` runs daily rather than monthly so that a day the cluster was
-unavailable is picked up on the next run, as long as that run is within the first week; reruns update the existing announcement and
-edit the message already in Discord instead of posting a second one, and do nothing when
+unavailable is picked up on the next run, as long as that run is within the first week; reruns update the existing announcement, and the publisher
+edits the message already in Discord instead of posting a second one, and do nothing when
 the leaderboard is unchanged. Pass `--date` to exercise it by hand.
 
 Both require `DISCORD_BOT_TOKEN` and `DISCORD_ANNOUNCEMENTS_CHANNEL_ID`. With either unset, `publish_announcements` sends nothing.
 
 An announcement's `status` is derived rather than stored: no `publish_at` reads as draft, a future one as scheduled, and the delivery records decide whether it is pending, published or failed. It is read-only over the API — schedule by setting `publish_at`. Deriving it means a stored value can never contradict what Discord actually received.
+
+**Editing and deleting.** Saving a published announcement is enough to update Discord: `publish_announcements` also edits the message of any sent announcement changed since it was last synced (`AnnouncementDelivery.synced_at`), so a change reaches Discord within one cron interval. If someone removed the message by hand, the delivery is dropped and the announcement is posted again. Deleting an announcement through the API removes the Discord message first; if Discord is unreachable the request fails with `502` and nothing is deleted, since deleting the row would lose the message ID and orphan the post.
+
+**Visibility.** Editors (anyone with `change_announcement`: Admin and Media) see every announcement that has left draft, plus their own drafts. Everyone else sees only announcements whose `publish_at` has passed. A row you cannot see is a `404` for edits and deletes too, so a draft is only ever touched by its author. Delivery records (Discord message ID, status, attempts) are editors only, on `/announcements/deliveries/` and inline on an announcement alike; everyone else gets none. The raw `last_error` text (hosts, Discord error codes) goes to Admins alone; other editors see that a delivery failed, and how many times, without it. `created_by` and `updated_by` are `{username, first_name, last_name}` objects.
+
+**Preview.** `GET /announcements/{id}/preview/` needs no login and returns only `id`, `type`, `type_display`, `title`, `summary` and `publish_at`, for link previews. Drafts and scheduled posts are a `404`. The full body, and `mentions` (a map from the Discord IDs pinged in the body to `{name, username}`, so a client can show the name as a link to the member's profile), need a login. `mentions` is best effort: someone whose Discord ID we don't hold is simply absent. List with `?live=true` for published-only and `?status=draft|scheduled|pending|published|failed` to match the derived status.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
