@@ -19,6 +19,7 @@ MENTION_EVERYONE = "@everyone"
 
 # NOTE: Placeholder Arabic copy, pending the community's own wording.
 TITLE = "المتصدرون لشهر {month} {year}"
+SUMMARY = "أسماء الفائزين في مسابقة شهر {month} {year}، بارك الله في جهودهم."
 BANNER = "🎊 🎊 🎊 🎊 🎊 🎊 🎊"
 INTRO = """الحمد لله مُتِمِّ نعمته، والصلاة والسلام على من سار على هديه، انتهينا من شهر {month}."""
 WINNERS_HEADING = "## إعلان الفائزين"
@@ -117,6 +118,12 @@ def verse_for_month(hijri_year: int, hijri_month: int) -> str:
 
 def top_performers_title(hijri_year: int, hijri_month: int) -> str:
     return TITLE.format(
+        month=hijri.month_name(hijri_year, hijri_month), year=hijri_year
+    )
+
+
+def top_performers_summary(hijri_year: int, hijri_month: int) -> str:
+    return SUMMARY.format(
         month=hijri.month_name(hijri_year, hijri_month), year=hijri_year
     )
 

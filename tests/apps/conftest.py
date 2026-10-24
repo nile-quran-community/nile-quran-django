@@ -48,6 +48,20 @@ def supervisor_user(db):
 
 
 @pytest.fixture
+def media_user(db) -> User:
+    group = Group.objects.get(name="Media")
+    media = User.objects.create_user(
+        email="media@example.com",
+        username="mediauser",
+        password="mediapass",
+        first_name="Media",
+        last_name="User",
+    )
+    media.groups.add(group)
+    return media
+
+
+@pytest.fixture
 def jwt_user_token(existing_user) -> str:
     token = AccessToken.for_user(existing_user)
     return str(token)
@@ -62,4 +76,10 @@ def jwt_admin_token(admin_user) -> str:
 @pytest.fixture
 def jwt_supervisor_token(supervisor_user) -> str:
     token = AccessToken.for_user(supervisor_user)
+    return str(token)
+
+
+@pytest.fixture
+def jwt_media_token(media_user) -> str:
+    token = AccessToken.for_user(media_user)
     return str(token)
