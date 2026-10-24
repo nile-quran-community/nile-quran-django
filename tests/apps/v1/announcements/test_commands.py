@@ -6,6 +6,9 @@ import pytest
 from django.core.management import call_command
 
 from nile_quran_community_api.apps.v1.announcements.integrations import discord
+from nile_quran_community_api.apps.v1.announcements.management.commands.publish_announcements import (
+    Command,
+)
 from nile_quran_community_api.apps.v1.announcements.models import (
     Announcement,
     AnnouncementDelivery,
@@ -337,6 +340,7 @@ class TestPublishEdits:
         announcement = self.published()
         announcement.title = "عنوان جديد"
         announcement.save()
+        synced_before = announcement.deliveries.get().synced_at
         discord_api.clear()
         recording = discord.edit_message
 
@@ -347,8 +351,34 @@ class TestPublishEdits:
         call_command("publish_announcements")
 
         assert announcement.deliveries.get().external_id == MESSAGE_ID
+        # still stale, which is what makes the next run try again
+        assert announcement.deliveries.get().synced_at == synced_before
 
         monkeypatch.setattr(discord, "edit_message", recording)
+        call_command("publish_announcements")
+
+        assert [call["action"] for call in discord_api] == ["edit"]
+
+    def test_an_edit_saved_after_the_run_loaded_the_row_is_not_lost(
+        self, discord_api, monkeypatch
+    ):
+        announcement = self.published()
+        announcement.title = "عنوان جديد"
+        announcement.save()
+        discord_api.clear()
+        loaded_then_edited = Command.stale
+
+        def stale(command):
+            rows = list(loaded_then_edited(command))
+            # someone saves again after the command read the row, before it rendered it
+            Announcement.objects.get(pk=announcement.pk).save()
+            return rows
+
+        monkeypatch.setattr(Command, "stale", stale)
+        call_command("publish_announcements")
+        monkeypatch.setattr(Command, "stale", loaded_then_edited)
+        discord_api.clear()
+
         call_command("publish_announcements")
 
         assert [call["action"] for call in discord_api] == ["edit"]

@@ -20,6 +20,11 @@ from django.conf import settings
 # aiohttp errors such as ServerDisconnectedError reach us unwrapped and are not OSErrors.
 DeliveryError = (discord.DiscordException, aiohttp.ClientError, OSError)
 
+# Login, channel lookup and the action together. Deleting an announcement waits on Discord
+# inside a web request, so a hung connection would otherwise hold a worker for as long as
+# discord.py's own defaults allow. `TimeoutError` is an `OSError`, so it is a DeliveryError.
+TIMEOUT_SECONDS = 15
+
 
 class DiscordErrorCode(enum.IntEnum):
     UNKNOWN_MESSAGE = 10008
@@ -76,7 +81,7 @@ def _with_channel[T](
     async def resolve(client: discord.Client) -> T:
         return await action(await client.fetch_channel(int(channel_id)))
 
-    return asyncio.run(_session(resolve))
+    return asyncio.run(asyncio.wait_for(_session(resolve), TIMEOUT_SECONDS))
 
 
 def post_message(channel_id: str, payload: Message) -> str:

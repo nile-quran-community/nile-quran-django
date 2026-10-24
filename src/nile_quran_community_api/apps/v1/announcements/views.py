@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.db.models import Q, QuerySet
 from django.utils import timezone
@@ -18,6 +20,8 @@ from .serializers import (
     AnnouncementPreviewSerializer,
     AnnouncementSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class DiscordUnavailable(APIException):
@@ -75,10 +79,8 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
             channel=AnnouncementDelivery.Channel.DISCORD,
             status=AnnouncementDelivery.Status.SENT,
         ).first()
-        if (
-            sent
-            and settings.DISCORD_ANNOUNCEMENTS_CHANNEL_ID
-            and settings.DISCORD_BOT_TOKEN
+        if sent and (
+            settings.DISCORD_ANNOUNCEMENTS_CHANNEL_ID and settings.DISCORD_BOT_TOKEN
         ):
             try:
                 discord.delete_message(
@@ -88,6 +90,15 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
                 pass  # already gone, which is what we wanted
             except discord.DeliveryError as error:
                 raise DiscordUnavailable() from error
+        elif sent:
+            # Deleting still goes ahead, so a local or half-configured environment isn't
+            # stuck with a post it can never remove; the message is left behind in Discord.
+            logger.warning(
+                "Announcement %s deleted but Discord is not configured; message %s "
+                "was left in the channel.",
+                instance.pk,
+                sent.external_id,
+            )
         instance.delete()
 
     @extend_schema(responses=AnnouncementPreviewSerializer)

@@ -88,3 +88,15 @@ class TestDeleteMessage:
         channel_answering(None)
 
         discord.delete_message("channel-1", "123456789")
+
+
+class TestTimeout:
+    def test_a_hung_discord_call_gives_up_as_a_delivery_error(self, monkeypatch):
+        async def hang(action, intents=None):
+            await asyncio.sleep(10)
+
+        monkeypatch.setattr(discord, "_session", hang)
+        monkeypatch.setattr(discord, "TIMEOUT_SECONDS", 0.01)
+
+        with pytest.raises(discord.DeliveryError):
+            discord.delete_message("channel-1", "123456789")

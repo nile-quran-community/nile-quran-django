@@ -40,8 +40,6 @@ class Command(BaseCommand):
 
     def resync(self, delivery: AnnouncementDelivery, channel_id: str) -> None:
         announcement = delivery.announcement
-        # Taken before rendering so an edit that lands mid-run is picked up next time.
-        started = timezone.now()
         try:
             discord.edit_message(
                 channel_id,
@@ -50,20 +48,21 @@ class Command(BaseCommand):
             )
         except discord.MessageNotFound:
             # Someone removed the post. Dropping the delivery leaves the announcement
-            # with nothing sent, so the next run posts a replacement.
+            # due again, so the loop in `handle` posts a replacement in this same run.
             delivery.delete()
-            self.stdout.write(f"Announcement {announcement.pk} is gone; will repost.")
+            self.stdout.write(f"Announcement {announcement.pk} is gone; reposting.")
             return
         except discord.DeliveryError as error:
             self.stderr.write(f"Announcement {announcement.pk} edit failed: {error}")
             return
 
-        delivery.synced_at = started
+        # The version we rendered, not the clock: an edit saved since we loaded the row has
+        # a later `updated_at`, so it still reads as stale and goes out on the next run.
+        delivery.synced_at = announcement.updated_at
         delivery.save(update_fields=["synced_at", "updated_at"])
         self.stdout.write(f"Announcement {announcement.pk} updated.")
 
     def deliver(self, announcement: Announcement, channel_id: str) -> None:
-        started = timezone.now()
         delivery, _ = AnnouncementDelivery.objects.get_or_create(
             announcement=announcement,
             channel=AnnouncementDelivery.Channel.DISCORD,
@@ -84,7 +83,7 @@ class Command(BaseCommand):
 
         delivery.status = AnnouncementDelivery.Status.SENT
         delivery.delivered_at = timezone.now()
-        delivery.synced_at = started
+        delivery.synced_at = announcement.updated_at  # see `resync`
         delivery.last_error = ""
         delivery.save()
         self.stdout.write(f"Announcement {announcement.pk} sent.")

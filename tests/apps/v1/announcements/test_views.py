@@ -2,6 +2,8 @@ import datetime as dt
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from rest_framework import status as http
 from rest_framework.test import APIClient
 
@@ -124,21 +126,14 @@ class TestAnnouncementDeliveryViewSet:
 
     def test_is_read_only(self, admin_client):
         record = delivery(announcement())
-        refused = {http.HTTP_403_FORBIDDEN, http.HTTP_405_METHOD_NOT_ALLOWED}
+        forbidden = http.HTTP_403_FORBIDDEN
+        url = f"/announcements/deliveries/{record.pk}/"
 
         assert (
-            admin_client.post("/announcements/deliveries/", {}).status_code in refused
+            admin_client.post("/announcements/deliveries/", {}).status_code == forbidden
         )
-        assert (
-            admin_client.patch(
-                f"/announcements/deliveries/{record.pk}/", {"status": "sent"}
-            ).status_code
-            in refused
-        )
-        assert (
-            admin_client.delete(f"/announcements/deliveries/{record.pk}/").status_code
-            in refused
-        )
+        assert admin_client.patch(url, {"status": "sent"}).status_code == forbidden
+        assert admin_client.delete(url).status_code == forbidden
         assert AnnouncementDelivery.objects.count() == 1
 
 
@@ -190,6 +185,28 @@ class TestAnnouncementViewSet:
 
         assert response.status_code == http.HTTP_201_CREATED
         assert Announcement.objects.get().created_by == admin_user
+
+    def test_the_idempotency_key_cannot_be_set_over_the_api(self, admin_client):
+        response = admin_client.post(
+            "/announcements/",
+            {
+                "type": Announcement.Type.GENERAL,
+                "title": "إعلان",
+                "content": "نص",
+                "idempotency_key": "month_top_performers:1447-08",
+            },
+            format="json",
+        )
+        record = Announcement.objects.get()
+        stolen = admin_client.patch(
+            f"/announcements/{record.pk}/",
+            {"idempotency_key": "month_top_performers:1447-09"},
+            format="json",
+        )
+
+        assert response.status_code == http.HTTP_201_CREATED
+        assert stolen.status_code == http.HTTP_200_OK
+        assert Announcement.objects.get().idempotency_key == ""
 
     def test_a_generated_announcement_can_be_edited(self, admin_client):
         record = announcement(created_by=None)
@@ -250,6 +267,39 @@ class TestVisibility:
 
         assert response.status_code == http.HTTP_404_NOT_FOUND
 
+    def test_deleting_someone_elses_draft_is_a_404(self, media_client, admin_user):
+        draft = announcement(publish_at=None, created_by=admin_user)
+
+        response = media_client.delete(f"/announcements/{draft.pk}/")
+
+        assert response.status_code == http.HTTP_404_NOT_FOUND
+        assert Announcement.objects.filter(pk=draft.pk).exists()
+
+    def test_replacing_someone_elses_draft_is_a_404(self, media_client, admin_user):
+        draft = announcement(publish_at=None, created_by=admin_user)
+
+        response = media_client.put(
+            f"/announcements/{draft.pk}/",
+            {"type": Announcement.Type.GENERAL, "title": "x", "content": "نص"},
+            format="json",
+        )
+
+        assert response.status_code == http.HTTP_404_NOT_FOUND
+
+    def test_an_editor_does_not_see_delivery_records_of_anothers_draft(
+        self, media_client, admin_user
+    ):
+        delivery(announcement(publish_at=None, created_by=admin_user))
+
+        assert media_client.get("/announcements/deliveries/").data["count"] == 0
+
+    def test_an_editor_sees_delivery_records_of_their_own_draft(
+        self, media_client, media_user
+    ):
+        delivery(announcement(publish_at=None, created_by=media_user))
+
+        assert media_client.get("/announcements/deliveries/").data["count"] == 1
+
     def test_deliveries_follow_the_same_rule(self, student_client):
         delivery(announcement(publish_at=LATER))
 
@@ -276,10 +326,7 @@ class TestVisibility:
         assert media_client.get("/announcements/deliveries/").data["count"] == 1
 
     def test_the_list_needs_a_login(self, client):
-        assert client.get("/announcements/").status_code in {
-            http.HTTP_401_UNAUTHORIZED,
-            http.HTTP_403_FORBIDDEN,
-        }
+        assert client.get("/announcements/").status_code == http.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.django_db
@@ -300,6 +347,22 @@ class TestPreview:
         response = client.get(f"/announcements/{record.pk}/preview/")
 
         assert response.status_code == http.HTTP_404_NOT_FOUND
+
+    def test_a_scheduled_post_is_a_404_to_a_visitor_and_a_student(
+        self, client, student_client
+    ):
+        record = announcement(publish_at=LATER)
+        url = f"/announcements/{record.pk}/preview/"
+
+        assert client.get(url).status_code == http.HTTP_404_NOT_FOUND
+        assert student_client.get(url).status_code == http.HTTP_404_NOT_FOUND
+
+    def test_an_editor_can_preview_a_scheduled_post(self, media_client):
+        record = announcement(publish_at=LATER)
+
+        response = media_client.get(f"/announcements/{record.pk}/preview/")
+
+        assert response.status_code == http.HTTP_200_OK
 
 
 @pytest.mark.django_db
@@ -350,6 +413,22 @@ class TestMentions:
             "123": {"name": "علي أحمد", "username": "ali"}
         }
 
+    def test_a_ping_costs_at_most_one_query_per_row_that_has_one(self, admin_client):
+        """The known ceiling (see the ponytail note in the serializer): not constant, but
+        bounded, so a list never does more than one lookup per announcement."""
+
+        for _ in range(3):
+            announcement()
+        with CaptureQueriesContext(connection) as plain:
+            admin_client.get("/announcements/")
+        for _ in range(3):
+            announcement(content="مبروك <@123>")
+        with CaptureQueriesContext(connection) as pinged:
+            response = admin_client.get("/announcements/")
+
+        assert response.data["count"] == 6
+        assert len(pinged) - len(plain) <= 3
+
     def test_plain_content_costs_no_extra_query(
         self, admin_client, django_assert_max_num_queries
     ):
@@ -359,6 +438,58 @@ class TestMentions:
             response = admin_client.get("/announcements/")
 
         assert response.data["results"][0]["mentions"] == {}
+
+
+@pytest.mark.django_db
+class TestSentPostsStayReachable:
+    """A draft is visible to its author alone, so a post already in Discord must not be
+    turned back into one: nobody could then find, edit or delete it."""
+
+    def test_a_sent_post_cannot_go_back_to_a_draft(self, media_client, admin_user):
+        record = announcement(created_by=None)
+        delivery(record)
+
+        response = media_client.patch(
+            f"/announcements/{record.pk}/", {"publish_at": None}, format="json"
+        )
+
+        assert response.status_code == http.HTTP_400_BAD_REQUEST
+        assert "publish_at" in response.data
+        record.refresh_from_db()
+        assert record.publish_at == DUE
+
+    def test_a_sent_post_can_still_be_rescheduled(self, media_client):
+        record = announcement()
+        delivery(record)
+
+        response = media_client.patch(
+            f"/announcements/{record.pk}/",
+            {"publish_at": LATER.isoformat()},
+            format="json",
+        )
+
+        assert response.status_code == http.HTTP_200_OK
+
+    def test_a_post_not_yet_sent_can_go_back_to_a_draft(self, media_client):
+        record = announcement(publish_at=LATER)
+
+        response = media_client.patch(
+            f"/announcements/{record.pk}/", {"publish_at": None}, format="json"
+        )
+
+        assert response.status_code == http.HTTP_200_OK
+        record.refresh_from_db()
+        assert record.publish_at is None
+
+    def test_a_failed_send_does_not_count_as_sent(self, media_client):
+        record = announcement()
+        delivery(record, status=AnnouncementDelivery.Status.FAILED)
+
+        response = media_client.patch(
+            f"/announcements/{record.pk}/", {"publish_at": None}, format="json"
+        )
+
+        assert response.status_code == http.HTTP_200_OK
 
 
 @pytest.mark.django_db
@@ -447,7 +578,7 @@ class TestDelete:
         assert Announcement.objects.filter(pk=record.pk).exists()
 
     def test_without_discord_configured_the_row_is_just_deleted(
-        self, admin_client, settings, monkeypatch
+        self, admin_client, settings, monkeypatch, caplog
     ):
         settings.DISCORD_BOT_TOKEN = ""
         settings.DISCORD_ANNOUNCEMENTS_CHANNEL_ID = ""
@@ -460,6 +591,19 @@ class TestDelete:
         response = admin_client.delete(f"/announcements/{record.pk}/")
 
         assert response.status_code == http.HTTP_204_NO_CONTENT
+        # skipping Discord is allowed, but never silently
+        assert "left in the channel" in caplog.text
+
+    def test_a_post_that_was_never_sent_deletes_without_a_warning(
+        self, admin_client, admin_user, settings, caplog
+    ):
+        settings.DISCORD_BOT_TOKEN = ""
+        record = announcement(publish_at=None, created_by=admin_user)
+
+        response = admin_client.delete(f"/announcements/{record.pk}/")
+
+        assert response.status_code == http.HTTP_204_NO_CONTENT
+        assert caplog.text == ""
 
 
 @pytest.mark.django_db

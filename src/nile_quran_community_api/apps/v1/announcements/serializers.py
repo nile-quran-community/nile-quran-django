@@ -1,11 +1,13 @@
 import re
 
 from django.contrib.auth import get_user_model
+from django.utils.translation import gettext_lazy as _
 from rest_framework.serializers import (
     CharField,
     ModelSerializer,
     ReadOnlyField,
     SerializerMethodField,
+    ValidationError,
 )
 
 from ..users.permissions import is_admin_user
@@ -55,6 +57,24 @@ class AnnouncementSerializer(ModelSerializer):
     class Meta:
         model = Announcement
         fields = "__all__"
+        # The leaderboard command upserts on this key; an editor must not be able to move it.
+        read_only_fields = ("idempotency_key",)
+
+    def validate_publish_at(self, value):
+        """A post already in Discord can be rescheduled but not turned back into a draft:
+        drafts are visible to their author alone, so it would vanish from the API (and be
+        undeletable, for a post nobody authored) while staying up in Discord."""
+
+        if value is None and self.instance is not None:
+            sent = any(
+                d.status == AnnouncementDelivery.Status.SENT
+                for d in self.instance.deliveries.all()
+            )
+            if sent:
+                raise ValidationError(
+                    _("A post already on Discord cannot go back to a draft.")
+                )
+        return value
 
     def to_representation(self, instance: Announcement) -> dict:
         """Delivery records (Discord message IDs, errors, attempts) are for editors;

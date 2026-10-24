@@ -42,7 +42,8 @@ class AnnouncementFilterSet(django_filters.FilterSet):
     )
 
     def filter_live(self, queryset: QuerySet, name: str, value: bool) -> QuerySet:
-        """Only what is already public, so editors can leave their scheduled posts out."""
+        """Only what is already public, so editors can leave their scheduled posts out.
+        `live=false` is not the opposite: it filters nothing, the same as omitting it."""
 
         return queryset.filter(publish_at__lte=timezone.now()) if value else queryset
 
@@ -63,8 +64,10 @@ class AnnouncementFilterSet(django_filters.FilterSet):
                 return queryset.filter(~sent, publish_at__gt=now)
             case Status.FAILED:
                 return queryset.filter(~sent, due, failed)
-            case _:
+            case Status.PENDING:
                 return queryset.filter(~sent, ~failed, due)
+            case _:
+                return queryset.none()
 
     class Meta:
         model = Announcement
