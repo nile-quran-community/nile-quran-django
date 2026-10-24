@@ -3,11 +3,14 @@
 An announcement is due once `publish_at` has passed; a null `publish_at` is a draft and
 never matches. Delivery records decide what has already gone out, so an announcement is
 sent exactly once and a failed send is retried on the next run.
+
+A second pass edits the Discord message of any sent announcement that was changed since
+it was last synced, so saving an announcement is all an editor has to do.
 """
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.db.models import QuerySet
+from django.db.models import F, QuerySet
 from django.utils import timezone
 
 from ... import renderers
@@ -26,7 +29,41 @@ class Command(BaseCommand):
             deliveries__status=AnnouncementDelivery.Status.SENT,
         )
 
+    def stale(self) -> QuerySet[AnnouncementDelivery]:
+        """Sent messages whose announcement was edited after they last matched it."""
+
+        return AnnouncementDelivery.objects.filter(
+            channel=AnnouncementDelivery.Channel.DISCORD,
+            status=AnnouncementDelivery.Status.SENT,
+            announcement__updated_at__gt=F("synced_at"),
+        ).select_related("announcement")
+
+    def resync(self, delivery: AnnouncementDelivery, channel_id: str) -> None:
+        announcement = delivery.announcement
+        # Taken before rendering so an edit that lands mid-run is picked up next time.
+        started = timezone.now()
+        try:
+            discord.edit_message(
+                channel_id,
+                delivery.external_id,
+                renderers.announcement_message(announcement),
+            )
+        except discord.MessageNotFound:
+            # Someone removed the post. Dropping the delivery leaves the announcement
+            # with nothing sent, so the next run posts a replacement.
+            delivery.delete()
+            self.stdout.write(f"Announcement {announcement.pk} is gone; will repost.")
+            return
+        except discord.DeliveryError as error:
+            self.stderr.write(f"Announcement {announcement.pk} edit failed: {error}")
+            return
+
+        delivery.synced_at = started
+        delivery.save(update_fields=["synced_at", "updated_at"])
+        self.stdout.write(f"Announcement {announcement.pk} updated.")
+
     def deliver(self, announcement: Announcement, channel_id: str) -> None:
+        started = timezone.now()
         delivery, _ = AnnouncementDelivery.objects.get_or_create(
             announcement=announcement,
             channel=AnnouncementDelivery.Channel.DISCORD,
@@ -47,6 +84,7 @@ class Command(BaseCommand):
 
         delivery.status = AnnouncementDelivery.Status.SENT
         delivery.delivered_at = timezone.now()
+        delivery.synced_at = started
         delivery.last_error = ""
         delivery.save()
         self.stdout.write(f"Announcement {announcement.pk} sent.")
@@ -56,6 +94,9 @@ class Command(BaseCommand):
         if not channel_id or not settings.DISCORD_BOT_TOKEN:
             self.stderr.write("Discord is not configured; nothing was sent.")
             return
+
+        for delivery in self.stale():
+            self.resync(delivery, channel_id)
 
         for announcement in self.due():
             self.deliver(announcement, channel_id)

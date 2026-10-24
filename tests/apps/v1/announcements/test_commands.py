@@ -85,6 +85,15 @@ class TestGenerateTopPerformers:
         assert "شعبان" in announcement.title
         assert "10" in announcement.content
 
+    def test_gives_the_announcement_a_summary_naming_the_month(self, make_student):
+        make_student("winner", 10, IN_SHAABAN)
+
+        call_command("generate_top_performers", f"--date={RAMADAN_START}")
+
+        summary = Announcement.objects.get(idempotency_key=SHAABAN_KEY).summary
+        assert "شعبان" in summary
+        assert 0 < len(summary) <= 200
+
     def test_a_missed_month_start_is_picked_up_by_a_later_run(self, make_student):
         make_student("winner", 10, IN_SHAABAN)
 
@@ -139,7 +148,7 @@ class TestGenerateTopPerformers:
         assert Announcement.objects.count() == 1
         assert "20" in announcement.content
 
-    def test_rerun_edits_a_message_already_in_discord(self, make_student, discord_api):
+    def test_rerun_leaves_discord_to_the_publisher(self, make_student, discord_api):
         make_student("winner", 10, IN_SHAABAN)
         call_command("generate_top_performers", f"--date={RAMADAN_START}")
         call_command("publish_announcements")
@@ -147,57 +156,25 @@ class TestGenerateTopPerformers:
         make_student("latecomer", 20, IN_SHAABAN)
 
         call_command("generate_top_performers", f"--date={RAMADAN_START}")
+
+        assert discord_api == []
+        assert "20" in Announcement.objects.get(idempotency_key=SHAABAN_KEY).content
+
+    def test_rerun_is_synced_to_discord_by_the_next_publish(
+        self, make_student, discord_api
+    ):
+        make_student("winner", 10, IN_SHAABAN)
+        call_command("generate_top_performers", f"--date={RAMADAN_START}")
+        call_command("publish_announcements")
+        discord_api.clear()
+        make_student("latecomer", 20, IN_SHAABAN)
+        call_command("generate_top_performers", f"--date={RAMADAN_START}")
+
+        call_command("publish_announcements")
 
         assert [call["action"] for call in discord_api] == ["edit"]
         assert discord_api[0]["message"] == MESSAGE_ID
         assert "20" in discord_api[0]["payload"]["embed"]["description"]
-
-    def test_a_deleted_message_is_reposted_rather_than_edited(
-        self, make_student, discord_api, monkeypatch
-    ):
-        make_student("winner", 10, IN_SHAABAN)
-        call_command("generate_top_performers", f"--date={RAMADAN_START}")
-        call_command("publish_announcements")
-        announcement = Announcement.objects.get(idempotency_key=SHAABAN_KEY)
-        discord_api.clear()
-        make_student("latecomer", 20, IN_SHAABAN)
-
-        recording = discord.edit_message
-
-        def deleted(*args, **kwargs):
-            raise discord.MessageNotFound(MESSAGE_ID)
-
-        monkeypatch.setattr(discord, "edit_message", deleted)
-        call_command("generate_top_performers", f"--date={RAMADAN_START}")
-
-        assert not announcement.deliveries.exists()
-
-        monkeypatch.setattr(discord, "edit_message", recording)
-        call_command("publish_announcements")
-
-        assert [call["action"] for call in discord_api] == ["post"]
-        assert announcement.deliveries.get().status == AnnouncementDelivery.Status.SENT
-
-    def test_a_missing_channel_leaves_the_delivery_alone(
-        self, make_student, discord_api, monkeypatch
-    ):
-        """A 404 for the channel must not discard the ID of a message that still exists."""
-
-        make_student("winner", 10, IN_SHAABAN)
-        call_command("generate_top_performers", f"--date={RAMADAN_START}")
-        call_command("publish_announcements")
-        announcement = Announcement.objects.get(idempotency_key=SHAABAN_KEY)
-        make_student("latecomer", 20, IN_SHAABAN)
-
-        def channel_gone(*args, **kwargs):
-            raise discord_py.DiscordException("unknown channel")
-
-        monkeypatch.setattr(discord, "edit_message", channel_gone)
-
-        with pytest.raises(discord_py.DiscordException):
-            call_command("generate_top_performers", f"--date={RAMADAN_START}")
-
-        assert announcement.deliveries.get().external_id == MESSAGE_ID
 
 
 @pytest.mark.django_db
@@ -296,3 +273,82 @@ class TestPublishAnnouncements:
         call_command("publish_announcements")
 
         assert not AnnouncementDelivery.objects.exists()
+
+
+@pytest.mark.django_db
+class TestPublishEdits:
+    def published(self) -> Announcement:
+        announcement = due_announcement()
+        call_command("publish_announcements")
+        return announcement
+
+    def test_an_untouched_published_announcement_is_left_alone(self, discord_api):
+        self.published()
+        discord_api.clear()
+
+        call_command("publish_announcements")
+
+        assert discord_api == []
+
+    def test_an_edited_published_announcement_is_edited_on_discord(self, discord_api):
+        announcement = self.published()
+        discord_api.clear()
+        announcement.title = "عنوان جديد"
+        announcement.save()
+
+        call_command("publish_announcements")
+
+        assert [call["action"] for call in discord_api] == ["edit"]
+        assert discord_api[0]["message"] == MESSAGE_ID
+        assert discord_api[0]["payload"]["embed"]["title"] == "عنوان جديد"
+
+    def test_an_edit_is_pushed_once(self, discord_api):
+        announcement = self.published()
+        announcement.title = "عنوان جديد"
+        announcement.save()
+        call_command("publish_announcements")
+        discord_api.clear()
+
+        call_command("publish_announcements")
+
+        assert discord_api == []
+
+    def test_a_vanished_message_is_reposted(self, discord_api, monkeypatch):
+        announcement = self.published()
+        announcement.title = "عنوان جديد"
+        announcement.save()
+        discord_api.clear()
+        recording = discord.edit_message
+
+        def vanished(*args, **kwargs):
+            raise discord.MessageNotFound(MESSAGE_ID)
+
+        monkeypatch.setattr(discord, "edit_message", vanished)
+        call_command("publish_announcements")
+        monkeypatch.setattr(discord, "edit_message", recording)
+
+        # Same run: the delivery is dropped and the announcement is due again.
+        assert [call["action"] for call in discord_api] == ["post"]
+        assert announcement.deliveries.get().status == AnnouncementDelivery.Status.SENT
+
+    def test_a_discord_outage_keeps_the_message_id_and_retries(
+        self, discord_api, monkeypatch
+    ):
+        announcement = self.published()
+        announcement.title = "عنوان جديد"
+        announcement.save()
+        discord_api.clear()
+        recording = discord.edit_message
+
+        def down(*args, **kwargs):
+            raise discord_py.DiscordException("discord is down")
+
+        monkeypatch.setattr(discord, "edit_message", down)
+        call_command("publish_announcements")
+
+        assert announcement.deliveries.get().external_id == MESSAGE_ID
+
+        monkeypatch.setattr(discord, "edit_message", recording)
+        call_command("publish_announcements")
+
+        assert [call["action"] for call in discord_api] == ["edit"]

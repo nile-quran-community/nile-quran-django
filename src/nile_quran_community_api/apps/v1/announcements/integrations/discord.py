@@ -107,6 +107,20 @@ def edit_message(channel_id: str, message_id: str, payload: Message) -> None:
     _with_channel(channel_id, edit)
 
 
+def delete_message(channel_id: str, message_id: str) -> None:
+    """Remove a message this bot previously posted."""
+
+    async def delete(channel: discord.TextChannel) -> None:
+        try:
+            await channel.get_partial_message(int(message_id)).delete()
+        except discord.NotFound as error:
+            if error.code != DiscordErrorCode.UNKNOWN_MESSAGE:
+                raise
+            raise MessageNotFound(message_id) from error
+
+    _with_channel(channel_id, delete)
+
+
 def list_members(guild_id: str) -> list[Member]:
     """Every human member of the server, by the name the server shows for them.
 

@@ -48,3 +48,6 @@ msgstr "ديسكورد"
 
 msgid "Sent"
 msgstr "تم الإرسال"
+
+msgid "Could not remove the Discord message; nothing was deleted."
+msgstr "تعذّر حذف رسالة ديسكورد، ولم يُحذف الإعلان."
