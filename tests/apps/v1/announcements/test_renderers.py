@@ -13,8 +13,8 @@ SHAABAN = (1447, 8)
 
 @pytest.fixture
 def performer(make_student):
-    def _make(username, points, rank, discord_id=""):
-        student = make_student(username, points, IN_SHAABAN, discord_id=discord_id)
+    def _make(username, points, rank):
+        student = make_student(username, points, IN_SHAABAN)
         return Performer(user=student, points=points, rank=rank)
 
     return _make
@@ -92,20 +92,13 @@ class TestTopPerformersContent:
         assert " و " in first[0]
         assert first[0].count("ب12 نقطة") == 1
 
-    def test_mentions_students_who_have_a_discord_id(self, performer):
+    def test_mentions_students_by_their_username(self, performer):
         content = renderers.top_performers_content(
-            [performer("linked", 5, 1, discord_id="99")], *SHAABAN
+            [performer("winner", 5, 1)], *SHAABAN
         )
 
-        assert "<@99>" in content
-
-    def test_falls_back_to_the_name_without_a_discord_id(self, performer):
-        content = renderers.top_performers_content(
-            [performer("unlinked", 5, 1)], *SHAABAN
-        )
-
+        assert "@winner" in content
         assert "<@" not in content
-        assert "طالب unlinked" in content
 
     def test_title_carries_the_hijri_month_and_year(self):
         assert renderers.top_performers_title(*SHAABAN) == "المتصدرون لشهر شعبان 1447"
@@ -138,6 +131,37 @@ class TestPoetry:
 
     def test_consecutive_months_differ(self):
         assert renderers.verse_for_month(1447, 8) != renderers.verse_for_month(1447, 9)
+
+
+@pytest.mark.django_db
+class TestToDiscord:
+    def test_converts_a_linked_students_handle_to_a_discord_mention(self, make_student):
+        make_student("linked", 0, IN_SHAABAN, discord_id="99")
+
+        assert renderers.to_discord("المركز الأول: @linked") == "المركز الأول: <@99>"
+
+    def test_converts_every_handle_in_one_lookup(
+        self, make_student, django_assert_num_queries
+    ):
+        make_student("one", 0, IN_SHAABAN, discord_id="1")
+        make_student("two", 0, IN_SHAABAN, discord_id="2")
+
+        with django_assert_num_queries(1):
+            assert renderers.to_discord("@one و @two") == "<@1> و <@2>"
+
+    def test_an_unlinked_student_is_mentioned_by_name(self, make_student):
+        make_student("unlinked", 0, IN_SHAABAN)
+
+        assert renderers.to_discord("@unlinked") == "طالب unlinked"
+
+    def test_an_unknown_handle_is_left_alone(self):
+        assert renderers.to_discord("@ghost") == "@ghost"
+
+    def test_text_without_handles_is_untouched_and_queries_nothing(
+        self, django_assert_num_queries
+    ):
+        with django_assert_num_queries(0):
+            assert renderers.to_discord("لا طلاب هنا") == "لا طلاب هنا"
 
 
 @pytest.mark.django_db

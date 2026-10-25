@@ -3,6 +3,10 @@
 An announcement is due once `publish_at` has passed; a null `publish_at` is a draft and
 never matches. Delivery records decide what has already gone out, so an announcement is
 sent exactly once and a failed send is retried on the next run.
+
+This command is the Discord boundary: announcement content mentions students with
+site-native `@{username}` handles so the frontend can render them, and the renderers
+adapt those to Discord mentions only on the way out.
 """
 
 from django.conf import settings
@@ -36,7 +40,7 @@ class Command(BaseCommand):
         try:
             delivery.external_id = discord.post_message(
                 channel_id,
-                renderers.announcement_message(announcement),
+                renderers.discord_announcement_message(announcement),
             )
         except discord.DeliveryError as error:
             delivery.status = AnnouncementDelivery.Status.FAILED

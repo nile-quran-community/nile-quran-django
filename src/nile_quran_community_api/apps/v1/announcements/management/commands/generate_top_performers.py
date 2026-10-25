@@ -93,7 +93,7 @@ class Command(BaseCommand):
             discord.edit_message(
                 settings.DISCORD_ANNOUNCEMENTS_CHANNEL_ID,
                 delivery.external_id,
-                renderers.announcement_message(announcement),
+                renderers.discord_announcement_message(announcement),
             )
         except discord.MessageNotFound:
             # Someone removed the post. Dropping the delivery leaves the announcement
