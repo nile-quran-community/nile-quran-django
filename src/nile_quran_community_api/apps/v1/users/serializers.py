@@ -65,6 +65,11 @@ class UserSerializer(serializers.ModelSerializer):
         many=True,
         default=["Student"],
     )
+    discord_id = serializers.RegexField(
+        regex=r"^[1-9][0-9]{0,31}$",
+        trim_whitespace=True,
+        error_messages={"invalid": _("Discord ID must be a number")},
+    )
     phone_number = PhoneNumberField(required=False, allow_blank=True)
 
     class Meta:
@@ -81,6 +86,7 @@ class UserSerializer(serializers.ModelSerializer):
             "date_joined",
             "groups",
             "is_active",
+            "discord_id",
             "phone_number",
             "birth_date",
             "academic_status",

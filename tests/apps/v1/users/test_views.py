@@ -43,6 +43,7 @@ class TestUserSignup:
             "password": "testpass123",
             "first_name": "أحمد",
             "last_name": "محمد",
+            "discord_id": "123456789012345678",
         }
         response: Response = client.post("/users/", payload, format="json")
         assert response.status_code == status.HTTP_201_CREATED
@@ -57,6 +58,7 @@ class TestUserSignup:
             "password": "testpass123",
             "first_name": "أحمد",
             "last_name": "محمد",
+            "discord_id": "123456789012345678",
             "is_active": True,
         }
         response: Response = client.post("/users/", payload, format="json")
@@ -64,6 +66,46 @@ class TestUserSignup:
 
         created = User.objects.get(username="sneaky")
         assert created.is_active is False
+
+    def test_signup_stores_discord_id(self, client: APIClient):
+        payload = {
+            "email": "discord@example.com",
+            "username": "discorduser",
+            "password": "testpass123",
+            "first_name": "أحمد",
+            "last_name": "محمد",
+            "discord_id": "123456789012345678",
+        }
+        response: Response = client.post("/users/", payload, format="json")
+        assert response.status_code == status.HTTP_201_CREATED
+
+        created = User.objects.get(username="discorduser")
+        assert created.discord_id == "123456789012345678"
+
+    def test_signup_requires_discord_id(self, client: APIClient):
+        payload = {
+            "email": "nodiscord@example.com",
+            "username": "nodiscord",
+            "password": "testpass123",
+            "first_name": "أحمد",
+            "last_name": "محمد",
+        }
+        response: Response = client.post("/users/", payload, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "discord_id" in response.data
+
+    def test_signup_rejects_non_numeric_discord_id(self, client: APIClient):
+        payload = {
+            "email": "baddiscord@example.com",
+            "username": "baddiscord",
+            "password": "testpass123",
+            "first_name": "أحمد",
+            "last_name": "محمد",
+            "discord_id": "12a45678901234567",
+        }
+        response: Response = client.post("/users/", payload, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "discord_id" in response.data
 
 
 @pytest.mark.django_db
@@ -657,6 +699,7 @@ class TestUserProfileFields:
             "password": "testpass123",
             "first_name": "أحمد",
             "last_name": "محمد",
+            "discord_id": "123456789012345678",
         }
         client.post("/users/", payload, format="json")
         created = User.objects.get(username="incompleteuser")
