@@ -393,25 +393,38 @@ class TestAuthorship:
 
 @pytest.mark.django_db
 class TestMentions:
-    def test_maps_discord_ids_to_name_and_username_for_a_profile_link(
-        self, admin_client
-    ):
+    def test_maps_username_handles_to_name_and_username(self, admin_client):
         get_user_model().objects.create_user(
             username="ali",
             email="ali@example.com",
             password="x",
             first_name="علي",
             last_name="أحمد",
-            discord_id="123",
         )
-        announcement(content="مبروك <@123> و <@999>")
+        announcement(
+            content="مبروك @ali و @ghost و @everyone، راسلونا على team@example.com"
+        )
 
         response = admin_client.get("/announcements/")
 
-        # an ID nobody owns (999) is left out: the site shows a neutral word for it, no link
+        # handles nobody owns, @everyone and the email address are all left out
         assert response.data["results"][0]["mentions"] == {
-            "123": {"name": "علي أحمد", "username": "ali"}
+            "ali": {"name": "علي أحمد", "username": "ali"}
         }
+
+    def test_the_generated_leaderboard_resolves_its_handles(self, admin_client):
+        get_user_model().objects.create_user(
+            username="winner",
+            email="w@example.com",
+            password="x",
+            first_name="منى",
+            last_name="خالد",
+        )
+        announcement(content="١. @winner و @winner")
+
+        mentions = admin_client.get("/announcements/").data["results"][0]["mentions"]
+
+        assert mentions == {"winner": {"name": "منى خالد", "username": "winner"}}
 
     def test_a_ping_costs_at_most_one_query_per_row_that_has_one(self, admin_client):
         """The known ceiling (see the ponytail note in the serializer): not constant, but
@@ -422,7 +435,7 @@ class TestMentions:
         with CaptureQueriesContext(connection) as plain:
             admin_client.get("/announcements/")
         for _ in range(3):
-            announcement(content="مبروك <@123>")
+            announcement(content="مبروك @ali")
         with CaptureQueriesContext(connection) as pinged:
             response = admin_client.get("/announcements/")
 

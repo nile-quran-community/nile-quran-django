@@ -13,7 +13,9 @@ from rest_framework.serializers import (
 from ..users.permissions import is_admin_user
 from .models import Announcement, AnnouncementDelivery
 
-MENTION = re.compile(r"<@(\d+)>")
+# Members are mentioned as `@username` (see renderers). Not after a word character, so an
+# email address isn't one.
+HANDLE = re.compile(r"(?<!\w)@(\w+)")
 
 
 class AnnouncementDeliverySerializer(ModelSerializer):
@@ -87,17 +89,17 @@ class AnnouncementSerializer(ModelSerializer):
         return data
 
     def get_mentions(self, announcement: Announcement) -> dict[str, dict[str, str]]:
-        """Who each `<@id>` ping in the content is, so the site can show a name that links
-        to their profile instead of a Discord ID. Best effort: only people whose Discord ID
-        we hold appear here; anyone else is simply not in the map."""
+        """The full name behind each `@username` in the content, so the site can show it as
+        a link to the member's profile. A handle nobody owns (or `@everyone`) is simply not
+        in the map."""
 
-        ids = set(MENTION.findall(announcement.content))
-        if not ids:
+        handles = set(HANDLE.findall(announcement.content))
+        if not handles:
             return {}
-        # ponytail: one query per leaderboard row on a list page; batch in the view if lists grow
-        users = get_user_model().objects.filter(discord_id__in=ids)
+        # ponytail: one query per row with mentions on a list page; batch in the view if lists grow
+        users = get_user_model().objects.filter(username__in=handles)
         return {
-            u.discord_id: {
+            u.username: {
                 "name": f"{u.first_name} {u.last_name}".strip() or u.username,
                 "username": u.username,
             }
