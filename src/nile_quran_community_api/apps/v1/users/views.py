@@ -32,6 +32,7 @@ from . import permissions as perms
                     "first_name": "أحمد",
                     "last_name": "محمد",
                     "referrer": "username",
+                    "discord_id": "123456789012345678",
                 },
             )
         ],

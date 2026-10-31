@@ -6,6 +6,10 @@ sent exactly once and a failed send is retried on the next run.
 
 A second pass edits the Discord message of any sent announcement that was changed since
 it was last synced, so saving an announcement is all an editor has to do.
+
+This command is the Discord boundary: announcement content mentions students with
+site-native `@{username}` handles so the frontend can render them, and the renderers
+adapt those to Discord mentions only on the way out.
 """
 
 from django.conf import settings
@@ -44,7 +48,7 @@ class Command(BaseCommand):
             discord.edit_message(
                 channel_id,
                 delivery.external_id,
-                renderers.announcement_message(announcement),
+                renderers.discord_announcement_message(announcement),
             )
         except discord.MessageNotFound:
             # Someone removed the post. Dropping the delivery leaves the announcement
@@ -72,7 +76,7 @@ class Command(BaseCommand):
         try:
             delivery.external_id = discord.post_message(
                 channel_id,
-                renderers.announcement_message(announcement),
+                renderers.discord_announcement_message(announcement),
             )
         except discord.DeliveryError as error:
             delivery.status = AnnouncementDelivery.Status.FAILED

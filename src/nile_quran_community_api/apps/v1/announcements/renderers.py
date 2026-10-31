@@ -1,15 +1,23 @@
-"""Turns announcements into the payload Discord receives.
+"""Turns an announcement into what its destinations receive.
 
 The body goes in an embed, but mentions in an embed render without notifying anyone,
 so the `@everyone` that actually reaches the community lives in the message content.
 Because that notifies everybody, the mentions inside the embed need only read well.
 
+Students are mentioned with a site-native `@{username}` handle rather than a Discord
+ID: the same content is served to the frontend, where handles resolve to profiles and
+Discord IDs would not. `to_discord` converts the handles into Discord mentions at the
+boundary, so the stored content stays Discord-free.
+
 Only the monthly leaderboard has its body generated, and it is generated once and
 stored on the announcement so the row stays a record of what was posted.
 """
 
+import re
+
 from django.conf import settings
 
+from ..users.models import User
 from ..users.services import Performer
 from . import hijri
 from .integrations.discord import Embed, Message, mention
@@ -141,13 +149,7 @@ def _points(points: int) -> str:
 def _names(performers: list[Performer]) -> str:
     """Students sharing a rank are listed together on one line."""
 
-    return " و ".join(
-        mention(
-            performer.user.discord_id,
-            f"{performer.user.first_name} {performer.user.last_name}",
-        )
-        for performer in performers
-    )
+    return " و ".join(f"@{performer.user.username}" for performer in performers)
 
 
 def _ranked(performers: list[Performer]) -> dict[int, list[Performer]]:
@@ -220,3 +222,40 @@ def announcement_message(announcement: Announcement) -> Message:
         content=MENTION_EVERYONE,
         embed=announcement_embed(announcement),
     )
+
+
+def discord_announcement_message(announcement: Announcement) -> Message:
+    """`announcement_message` adapted for Discord: handles become Discord mentions."""
+
+    message = announcement_message(announcement)
+    message["embed"]["description"] = to_discord(message["embed"]["description"])
+    return message
+
+
+def _discord_names(usernames: set[str]) -> dict[str, str]:
+    """Map each `@{username}` handle to its Discord form.
+
+    A linked student becomes a Discord mention; an unlinked one becomes their display
+    name, since `@username` reads as Discord markup there and means nothing.
+    """
+
+    users = User.objects.in_bulk(usernames, field_name="username")
+    return {
+        username: mention(
+            users[username].discord_id,
+            f"{users[username].first_name} {users[username].last_name}",
+        )
+        if username in users
+        else f"@{username}"
+        for username in usernames
+    }
+
+
+def to_discord(text: str) -> str:
+    """Swap `@{username}` handles for Discord mentions ahead of sending."""
+
+    handles = set(re.findall(r"@(\w+)", text))
+    if not handles:
+        return text
+    names = _discord_names(handles)
+    return re.sub(r"@(\w+)", lambda match: names[match[1]], text)

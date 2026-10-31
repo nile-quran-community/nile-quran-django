@@ -179,6 +179,15 @@ class TestGenerateTopPerformers:
         assert discord_api[0]["message"] == MESSAGE_ID
         assert "20" in discord_api[0]["payload"]["embed"]["description"]
 
+    def test_the_stored_announcement_mentions_students_by_username(self, make_student):
+        make_student("winner", 10, IN_SHAABAN, discord_id="99")
+
+        call_command("generate_top_performers", f"--date={RAMADAN_START}")
+
+        announcement = Announcement.objects.get(idempotency_key=SHAABAN_KEY)
+        assert "@winner" in announcement.content
+        assert "<@99>" not in announcement.content
+
 
 @pytest.mark.django_db
 class TestPublishAnnouncements:
@@ -199,6 +208,34 @@ class TestPublishAnnouncements:
         assert delivery.external_id == MESSAGE_ID
         assert delivery.delivered_at is not None
         assert announcement.status == Announcement.Status.PUBLISHED
+
+    def test_username_handles_become_discord_mentions_on_the_way_out(
+        self, discord_api, make_student
+    ):
+        """The stored content keeps `@{username}`; Discord alone sees its own IDs."""
+
+        make_student("winner", 10, IN_SHAABAN, discord_id="99")
+        call_command("generate_top_performers", f"--date={RAMADAN_START}")
+
+        call_command("publish_announcements")
+
+        description = discord_api[0]["payload"]["embed"]["description"]
+        assert "<@99>" in description
+        assert "@winner" not in description
+        announcement = Announcement.objects.get(idempotency_key=SHAABAN_KEY)
+        assert "@winner" in announcement.content
+
+    def test_an_unlinked_student_is_mentioned_by_name_on_the_way_out(
+        self, discord_api, make_student
+    ):
+        make_student("winner", 10, IN_SHAABAN)
+        call_command("generate_top_performers", f"--date={RAMADAN_START}")
+
+        call_command("publish_announcements")
+
+        description = discord_api[0]["payload"]["embed"]["description"]
+        assert "طالب winner" in description
+        assert "@winner" not in description
 
     def test_does_not_resend_an_already_delivered_announcement(self, discord_api):
         due_announcement()
@@ -304,6 +341,24 @@ class TestPublishEdits:
         assert [call["action"] for call in discord_api] == ["edit"]
         assert discord_api[0]["message"] == MESSAGE_ID
         assert discord_api[0]["payload"]["embed"]["title"] == "عنوان جديد"
+
+    def test_an_edit_sends_discord_mentions_not_handles(
+        self, make_student, discord_api
+    ):
+        make_student("winner", 10, IN_SHAABAN, discord_id="99")
+        call_command("generate_top_performers", f"--date={RAMADAN_START}")
+        call_command("publish_announcements")
+        announcement = Announcement.objects.get(idempotency_key=SHAABAN_KEY)
+        announcement.title = "عنوان جديد"
+        announcement.save()
+        discord_api.clear()
+
+        call_command("publish_announcements")
+
+        description = discord_api[0]["payload"]["embed"]["description"]
+        assert [call["action"] for call in discord_api] == ["edit"]
+        assert "<@99>" in description
+        assert "@winner" not in description
 
     def test_an_edit_is_pushed_once(self, discord_api):
         announcement = self.published()
