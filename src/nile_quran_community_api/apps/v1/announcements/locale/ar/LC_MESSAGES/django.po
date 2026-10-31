@@ -48,3 +48,9 @@ msgstr "ديسكورد"
 
 msgid "Sent"
 msgstr "تم الإرسال"
+
+msgid "Could not remove the Discord message; nothing was deleted."
+msgstr "تعذّر حذف رسالة ديسكورد، ولم يُحذف الإعلان."
+
+msgid "A post already on Discord cannot go back to a draft."
+msgstr "لا يمكن إعادة منشور على ديسكورد إلى مسودة."

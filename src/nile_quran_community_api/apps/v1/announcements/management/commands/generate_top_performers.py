@@ -5,20 +5,19 @@ the first RETRY_DAYS days of a month, so a run missed on the first is picked up 
 one. After that the previous month is left alone: a leaderboard that late is stale, so it
 is abandoned rather than posted. Reruns are safe —
 `idempotency_key` identifies the month, so a later run updates the existing announcement
-and edits the message already in Discord instead of posting again, and does nothing at
-all when the leaderboard has not changed.
+and publish_announcements edits the message already in Discord instead of posting
+again; nothing happens at all when the leaderboard has not changed.
 """
 
 import datetime as dt
 
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError, CommandParser
+from django.core.management.base import BaseCommand, CommandParser
 from django.utils import timezone
 
 from ....users.services import top_performers
 from ... import hijri, renderers
-from ...integrations import discord
-from ...models import Announcement, AnnouncementDelivery
+from ...models import Announcement
 
 RETRY_DAYS = 7
 
@@ -54,6 +53,7 @@ class Command(BaseCommand):
 
         idempotency_key = f"{Announcement.Type.MONTH_TOP_PERFORMERS}:{year}-{month:02d}"
         title = renderers.top_performers_title(year, month)
+        summary = renderers.top_performers_summary(year, month)
         content = renderers.top_performers_content(performers, year, month)
 
         existing = Announcement.objects.filter(idempotency_key=idempotency_key).first()
@@ -61,6 +61,7 @@ class Command(BaseCommand):
             Announcement.objects.create(
                 type=Announcement.Type.MONTH_TOP_PERFORMERS,
                 title=title,
+                summary=summary,
                 content=content,
                 publish_at=timezone.now(),
                 idempotency_key=idempotency_key,
@@ -68,35 +69,14 @@ class Command(BaseCommand):
             self.stdout.write(f"Queued {idempotency_key} for delivery.")
             return
 
-        if (existing.title, existing.content) == (title, content):
+        if (existing.title, existing.summary, existing.content) == (
+            title,
+            summary,
+            content,
+        ):
             self.stdout.write(f"{idempotency_key} is up to date.")
             return
 
-        existing.title, existing.content = title, content
-        existing.save(update_fields=["title", "content", "updated_at"])
-        self._refresh_delivered_message(existing)
+        existing.title, existing.summary, existing.content = title, summary, content
+        existing.save(update_fields=["title", "summary", "content", "updated_at"])
         self.stdout.write(f"Updated {idempotency_key}.")
-
-    def _refresh_delivered_message(self, announcement: Announcement) -> None:
-        """Bring an already-posted Discord message back in line with the announcement."""
-        delivery = announcement.deliveries.filter(
-            channel=AnnouncementDelivery.Channel.DISCORD,
-            status=AnnouncementDelivery.Status.SENT,
-        ).first()
-        if delivery is None:
-            return
-
-        if not settings.DISCORD_ANNOUNCEMENTS_CHANNEL_ID:
-            raise CommandError("DISCORD_ANNOUNCEMENTS_CHANNEL_ID is not configured.")
-
-        try:
-            discord.edit_message(
-                settings.DISCORD_ANNOUNCEMENTS_CHANNEL_ID,
-                delivery.external_id,
-                renderers.discord_announcement_message(announcement),
-            )
-        except discord.MessageNotFound:
-            # Someone removed the post. Dropping the delivery leaves the announcement
-            # with nothing sent, so publish_announcements posts a replacement.
-            delivery.delete()
-            self.stdout.write("Discord message is gone; queued a replacement.")

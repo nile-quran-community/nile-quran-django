@@ -24,6 +24,10 @@ class FakePartialMessage:
         if self.code is not None:
             raise discord_py.NotFound(FakeResponse(), {"code": self.code})
 
+    async def delete(self) -> None:
+        if self.code is not None:
+            raise discord_py.NotFound(FakeResponse(), {"code": self.code})
+
 
 class FakeChannel:
     def __init__(self, code: int | None):
@@ -65,3 +69,34 @@ class TestEditMessage:
         channel_answering(None)
 
         assert discord.edit_message("channel-1", "123456789", PAYLOAD) is None
+
+
+class TestDeleteMessage:
+    def test_unknown_message_becomes_a_domain_error(self, channel_answering):
+        channel_answering(discord.DiscordErrorCode.UNKNOWN_MESSAGE)
+
+        with pytest.raises(discord.MessageNotFound):
+            discord.delete_message("channel-1", "123456789")
+
+    def test_unknown_channel_is_left_alone(self, channel_answering):
+        channel_answering(discord.DiscordErrorCode.UNKNOWN_CHANNEL)
+
+        with pytest.raises(discord_py.NotFound):
+            discord.delete_message("channel-1", "123456789")
+
+    def test_a_successful_delete_returns_quietly(self, channel_answering):
+        channel_answering(None)
+
+        discord.delete_message("channel-1", "123456789")
+
+
+class TestTimeout:
+    def test_a_hung_discord_call_gives_up_as_a_delivery_error(self, monkeypatch):
+        async def hang(action, intents=None):
+            await asyncio.sleep(10)
+
+        monkeypatch.setattr(discord, "_session", hang)
+        monkeypatch.setattr(discord, "TIMEOUT_SECONDS", 0.01)
+
+        with pytest.raises(discord.DeliveryError):
+            discord.delete_message("channel-1", "123456789")
