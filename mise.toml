@@ -5,13 +5,13 @@ all_compile = false
 [tools]
 # NOTE: Python
 python = "3.13"
-uv = "0.11"
+uv = "0.13"
 # NOTE: Formatter and linters
-ruff = "0.16"
-oxfmt = "0.43"
-tombi = "0.9"
+ruff = "0.17"
+oxfmt = "0.78"
+tombi = "1"
 # NOTE: Utils
-prek = "0.3"
+prek = "0.5"
 
 [env]
 _.python.venv = { create = true, path = ".venv" }
